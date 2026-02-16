@@ -1,0 +1,297 @@
+package fluxer
+
+import (
+	"fmt"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/disgoorg/omit"
+	"github.com/disgoorg/snowflake/v2"
+
+	"github.com/fluxergo/fluxergo/internal/flags"
+)
+
+type Application struct {
+	ID                                snowflake.ID                      `json:"id"`
+	Name                              string                            `json:"name"`
+	Icon                              *string                           `json:"icon,omitempty"`
+	Description                       string                            `json:"description"`
+	RPCOrigins                        []string                          `json:"rpc_origins"`
+	BotPublic                         bool                              `json:"bot_public"`
+	BotRequireCodeGrant               bool                              `json:"bot_require_code_grant"`
+	Bot                               *User                             `json:"bot,omitempty"`
+	TermsOfServiceURL                 *string                           `json:"terms_of_service_url,omitempty"`
+	PrivacyPolicyURL                  *string                           `json:"privacy_policy_url,omitempty"`
+	CustomInstallURL                  *string                           `json:"custom_install_url,omitempty"`
+	InteractionsEndpointURL           *string                           `json:"interactions_endpoint_url,omitempty"`
+	RoleConnectionsVerificationURL    *string                           `json:"role_connections_verification_url"`
+	InstallParams                     *InstallParams                    `json:"install_params"`
+	Tags                              []string                          `json:"tags"`
+	Owner                             *User                             `json:"owner,omitempty"`
+	VerifyKey                         string                            `json:"verify_key"`
+	Team                              *Team                             `json:"team,omitempty"`
+	GuildID                           *snowflake.ID                     `json:"guild_id,omitempty"`
+	Guild                             *Guild                            `json:"guild,omitempty"`
+	PrimarySkuID                      *snowflake.ID                     `json:"primary_sku_id,omitempty"`
+	Slug                              *string                           `json:"slug,omitempty"`
+	CoverImage                        *string                           `json:"cover_image,omitempty"`
+	Flags                             ApplicationFlags                  `json:"flags,omitempty"`
+	ApproximateGuildCount             *int                              `json:"approximate_guild_count,omitempty"`
+	ApproximateUserInstallCount       *int                              `json:"approximate_user_install_count,omitempty"`
+	ApproximateUserAuthorizationCount *int                              `json:"approximate_user_authorization_count,omitempty"`
+	IntegrationTypesConfig            ApplicationIntegrationTypesConfig `json:"integration_types_config"`
+}
+
+func (a Application) IconURL(opts ...CDNOpt) *string {
+	if a.Icon == nil {
+		return nil
+	}
+	url := formatAssetURL(ApplicationIcon, opts, a.ID, *a.Icon)
+	return &url
+}
+
+func (a Application) CoverImageURL(opts ...CDNOpt) *string {
+	if a.CoverImage == nil {
+		return nil
+	}
+	url := formatAssetURL(ApplicationCover, opts, a.ID, *a.CoverImage)
+	return &url
+}
+
+func (a Application) CreatedAt() time.Time {
+	return a.ID.Time()
+}
+
+type ApplicationUpdate struct {
+	CustomInstallURL               *string                            `json:"custom_install_url,omitempty"`
+	Description                    *string                            `json:"description,omitempty"`
+	RoleConnectionsVerificationURL *string                            `json:"role_connections_verification_url,omitempty"`
+	InstallParams                  *InstallParams                     `json:"install_params,omitempty"`
+	Flags                          *ApplicationFlags                  `json:"flags,omitempty"`
+	Icon                           omit.Omit[*Icon]                   `json:"icon,omitzero"`
+	CoverImage                     omit.Omit[*Icon]                   `json:"cover_image,omitzero"`
+	InteractionsEndpointURL        *string                            `json:"interactions_endpoint_url,omitempty"`
+	Tags                           []string                           `json:"tags,omitempty"`
+	IntegrationTypesConfig         *ApplicationIntegrationTypesConfig `json:"integration_types_config,omitempty"`
+}
+
+type PartialApplication struct {
+	ID    snowflake.ID     `json:"id"`
+	Flags ApplicationFlags `json:"flags"`
+}
+
+type AuthorizationInformation struct {
+	Application Application   `json:"application"`
+	Scopes      []OAuth2Scope `json:"scopes"`
+	Expires     time.Time     `json:"expires"`
+	User        *User         `json:"user"`
+}
+
+type InstallParams struct {
+	Scopes      []OAuth2Scope `json:"scopes"`
+	Permissions Permissions   `json:"permissions"`
+}
+
+// OAuth2Scope are the scopes you can request in the OAuth2 flow.
+type OAuth2Scope string
+
+const (
+	// OAuth2ScopeActivitiesRead allows your app to fetch data from a user's "Now Playing/Recently Played" list - requires Discord approval
+	OAuth2ScopeActivitiesRead OAuth2Scope = "activities.read"
+	// OAuth2ScopeActivitiesWrite allows your app to update a user's activity - requires Discord approval (NOT REQUIRED FOR GAMESDK ACTIVITY MANAGER)
+	OAuth2ScopeActivitiesWrite OAuth2Scope = "activities.write"
+
+	// OAuth2ScopeApplicationsBuildsRead allows your app to read build data for a user's applications
+	OAuth2ScopeApplicationsBuildsRead OAuth2Scope = "applications.builds.read"
+	// OAuth2ScopeApplicationsBuildsUpload allows your app to upload/update builds for a user's applications - requires Discord approval
+	OAuth2ScopeApplicationsBuildsUpload OAuth2Scope = "applications.builds.upload"
+
+	OAuth2ScopeApplicationsCommands                  OAuth2Scope = "applications.commands"
+	OAuth2ScopeApplicationsCommandsUpdate            OAuth2Scope = "applications.commands.update"
+	OAuth2ScopeApplicationsCommandsPermissionsUpdate OAuth2Scope = "applications.commands.permissions.update"
+	OAuth2ScopeApplicationsEntitlements              OAuth2Scope = "applications.entitlements"
+	OAuth2ScopeApplicationsStoreUpdate               OAuth2Scope = "applications.store.update"
+
+	OAuth2ScopeRPC                  OAuth2Scope = "rpc"
+	OAuth2ScopeRPCNotificationsRead OAuth2Scope = "rpc.notifications.read"
+	OAuth2ScopeRPCVoiceWrite        OAuth2Scope = "rpc.voice.write"
+	OAuth2ScopeRPCVoiceRead         OAuth2Scope = "rpc.voice.read"
+	OAuth2ScopeRPCActivitiesWrite   OAuth2Scope = "rpc.activities.write"
+
+	OAuth2ScopeGuilds            OAuth2Scope = "guilds"
+	OAuth2ScopeGuildsJoin        OAuth2Scope = "guilds.join"
+	OAuth2ScopeGuildsMembersRead OAuth2Scope = "guilds.members.read"
+	OAuth2ScopeGDMJoin           OAuth2Scope = "gdm.join"
+
+	OAuth2ScopeRelationshipsRead    OAuth2Scope = "relationships.read"
+	OAuth2ScopeRoleConnectionsWrite OAuth2Scope = "role_connections.write"
+	OAuth2ScopeIdentify             OAuth2Scope = "identify"
+	OAuth2ScopeEmail                OAuth2Scope = "email"
+	OAuth2ScopeConnections          OAuth2Scope = "connections"
+	OAuth2ScopeBot                  OAuth2Scope = "bot"
+	OAuth2ScopeMessagesRead         OAuth2Scope = "messages.read"
+	OAuth2ScopeWebhookIncoming      OAuth2Scope = "webhook.incoming"
+)
+
+func (s OAuth2Scope) String() string {
+	return string(s)
+}
+
+const ScopeSeparator = " "
+
+func JoinScopes(scopes []OAuth2Scope) string {
+	strScopes := make([]string, len(scopes))
+	for i, scope := range scopes {
+		strScopes[i] = scope.String()
+	}
+	return strings.Join(strScopes, ScopeSeparator)
+}
+
+func SplitScopes(joinedScopes string) []OAuth2Scope {
+	var scopes []OAuth2Scope
+	for _, scope := range strings.Split(joinedScopes, ScopeSeparator) {
+		scopes = append(scopes, OAuth2Scope(scope))
+	}
+	return scopes
+}
+
+func HasScope(scope OAuth2Scope, scopes ...OAuth2Scope) bool {
+	return slices.Contains(scopes, scope)
+}
+
+type TokenType string
+
+const (
+	TokenTypeBearer TokenType = "Bearer"
+	TokenTypeBot    TokenType = "Bot"
+)
+
+func (t TokenType) String() string {
+	return string(t)
+}
+
+func (t TokenType) Apply(token string) string {
+	return fmt.Sprintf("%s %s", t.String(), token)
+}
+
+// ApplicationFlags (https://fluxer.com/developers/docs/resources/application#application-object-application-flags)
+type ApplicationFlags int
+
+const (
+	ApplicationFlagAutoModerationRuleCreateBadge = 1 << (iota + 6)
+	_
+	_
+	_
+	_
+	_
+	ApplicationFlagGatewayPresence
+	ApplicationFlagGatewayPresenceLimited
+	ApplicationFlagGatewayGuildMembers
+	ApplicationFlagGatewayGuildMemberLimited
+	ApplicationFlagVerificationPendingGuildLimit
+	ApplicationFlagEmbedded
+	ApplicationFlagGatewayMessageContent
+	ApplicationFlagGatewayMessageContentLimited
+	_
+	_
+	_
+	ApplicationFlagApplicationCommandBadge
+)
+
+// Add allows you to add multiple bits together, producing a new bit
+func (f ApplicationFlags) Add(bits ...ApplicationFlags) ApplicationFlags {
+	return flags.Add(f, bits...)
+}
+
+// Remove allows you to subtract multiple bits from the first, producing a new bit
+func (f ApplicationFlags) Remove(bits ...ApplicationFlags) ApplicationFlags {
+	return flags.Remove(f, bits...)
+}
+
+// Has will ensure that the bit includes all the bits entered
+func (f ApplicationFlags) Has(bits ...ApplicationFlags) bool {
+	return flags.Has(f, bits...)
+}
+
+// Missing will check whether the bit is missing any one of the bits
+func (f ApplicationFlags) Missing(bits ...ApplicationFlags) bool {
+	return flags.Missing(f, bits...)
+}
+
+type Team struct {
+	Icon    *string      `json:"icon"`
+	ID      snowflake.ID `json:"id"`
+	Members []TeamMember `json:"members"`
+	Name    string       `json:"name"`
+	OwnerID snowflake.ID `json:"owner_user_id"`
+}
+
+func (t Team) IconURL(opts ...CDNOpt) *string {
+	if t.Icon == nil {
+		return nil
+	}
+	url := formatAssetURL(TeamIcon, opts, t.ID, *t.Icon)
+	return &url
+}
+
+func (t Team) CreatedAt() time.Time {
+	return t.ID.Time()
+}
+
+type TeamMember struct {
+	MembershipState MembershipState `json:"membership_state"`
+	TeamID          snowflake.ID    `json:"team_id"`
+	User            User            `json:"user"`
+	Role            TeamRole        `json:"role"`
+}
+
+type MembershipState int
+
+const (
+	MembershipStateInvited MembershipState = iota + 1
+	MembershipStateAccepted
+)
+
+type TeamRole string
+
+const (
+	TeamRoleAdmin     TeamRole = "admin"
+	TeamRoleDeveloper TeamRole = "developer"
+	TeamRoleReadOnly  TeamRole = "read_only"
+)
+
+type ApplicationIntegrationType int
+
+const (
+	ApplicationIntegrationTypeGuildInstall ApplicationIntegrationType = iota
+	ApplicationIntegrationTypeUserInstall
+)
+
+type ApplicationIntegrationTypesConfig map[ApplicationIntegrationType]ApplicationIntegrationTypeConfiguration
+
+type ApplicationIntegrationTypeConfiguration struct {
+	OAuth2InstallParams *InstallParams `json:"oauth2_install_params"`
+}
+
+type ActivityInstance struct {
+	ApplicationID snowflake.ID     `json:"application_id"`
+	InstanceID    string           `json:"instance_id"`
+	LaunchID      snowflake.ID     `json:"launch_id"`
+	Location      ActivityLocation `json:"location"`
+	Users         []snowflake.ID   `json:"users"`
+}
+
+type ActivityLocation struct {
+	ID        string               `json:"id"`
+	Kind      ActivityLocationKind `json:"kind"`
+	ChannelID snowflake.ID         `json:"channel_id"`
+	GuildID   *snowflake.ID        `json:"guild_id"`
+}
+
+type ActivityLocationKind string
+
+const (
+	ActivityLocationKindGC ActivityLocationKind = "gc"
+	ActivityLocationKindPC ActivityLocationKind = "pc"
+)

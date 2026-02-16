@@ -1,0 +1,51 @@
+package gateway
+
+// EventType wraps all EventType types
+type EventType string
+
+// Constants for the gateway events
+const (
+	// EventTypeRaw is not a real event type, but is used to pass raw payloads to the bot.EventManager
+	EventTypeRaw                        EventType = "__RAW__"
+	EventTypeHeartbeatAck               EventType = "__HEARTBEAT_ACK__"
+	EventTypeReady                      EventType = "READY"
+	EventTypeResumed                    EventType = "RESUMED"
+	EventTypeMessageCreate              EventType = "MESSAGE_CREATE"
+	EventTypeMessageUpdate              EventType = "MESSAGE_UPDATE"
+	EventTypeMessageDelete              EventType = "MESSAGE_DELETE"
+	EventTypeMessageDeleteBulk          EventType = "MESSAGE_DELETE_BULK"
+	EventTypeMessageReactionAdd         EventType = "MESSAGE_REACTION_ADD"
+	EventTypeMessageReactionRemove      EventType = "MESSAGE_REACTION_REMOVE"
+	EventTypeMessageReactionRemoveAll   EventType = "MESSAGE_REACTION_REMOVE_ALL"
+	EventTypeMessageReactionRemoveEmoji EventType = "MESSAGE_REACTION_REMOVE_EMOJI"
+	EventTypeInteractionCreate          EventType = "INTERACTION_CREATE"
+	EventTypeGuildCreate                EventType = "GUILD_CREATE"
+	EventTypeGuildUpdate                EventType = "GUILD_UPDATE"
+	EventTypeGuildDelete                EventType = "GUILD_DELETE"
+	EventTypeGuildBanAdd                EventType = "GUILD_BAN_ADD"
+	EventTypeGuildBanRemove             EventType = "GUILD_BAN_REMOVE"
+	EventTypeGuildEmojisUpdate          EventType = "GUILD_EMOJIS_UPDATE"
+	EventTypeGuildStickersUpdate        EventType = "GUILD_STICKERS_UPDATE"
+	EventTypeGuildIntegrationsUpdate    EventType = "GUILD_INTEGRATIONS_UPDATE"
+	EventTypeGuildMemberAdd             EventType = "GUILD_MEMBER_ADD"
+	EventTypeGuildMemberRemove          EventType = "GUILD_MEMBER_REMOVE"
+	EventTypeGuildMemberUpdate          EventType = "GUILD_MEMBER_UPDATE"
+	EventTypeGuildRoleCreate            EventType = "GUILD_ROLE_CREATE"
+	EventTypeGuildRoleUpdate            EventType = "GUILD_ROLE_UPDATE"
+	EventTypeGuildRoleDelete            EventType = "GUILD_ROLE_DELETE"
+	EventTypeGuildScheduledEventCreate  EventType = "GUILD_SCHEDULED_EVENT_CREATE"
+	EventTypeGuildScheduledEventUpdate  EventType = "GUILD_SCHEDULED_EVENT_UPDATE"
+	EventTypeGuildScheduledEventDelete  EventType = "GUILD_SCHEDULED_EVENT_DELETE"
+	EventTypeChannelCreate              EventType = "CHANNEL_CREATE"
+	EventTypeChannelUpdate              EventType = "CHANNEL_UPDATE"
+	EventTypeChannelDelete              EventType = "CHANNEL_DELETE"
+	EventTypeChannelPinsUpdate          EventType = "CHANNEL_PINS_UPDATE"
+	EventTypeInviteCreate               EventType = "INVITE_CREATE"
+	EventTypeInviteDelete               EventType = "INVITE_DELETE"
+	EventTypeTypingStart                EventType = "TYPING_START"
+	EventTypeUserUpdate                 EventType = "USER_UPDATE"
+	EventTypePresenceUpdate             EventType = "PRESENCE_UPDATE"
+	EventTypeVoiceStateUpdate           EventType = "VOICE_STATE_UPDATE"
+	EventTypeVoiceServerUpdate          EventType = "VOICE_SERVER_UPDATE"
+	EventTypeWebhooksUpdate             EventType = "WEBHOOKS_UPDATE"
+)
