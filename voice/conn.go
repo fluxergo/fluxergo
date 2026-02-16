@@ -7,9 +7,6 @@ import (
 	"time"
 
 	"github.com/disgoorg/snowflake/v2"
-	"github.com/livekit/protocol/livekit"
-	lksdk "github.com/livekit/server-sdk-go/v2"
-	"github.com/pion/webrtc/v4"
 
 	"github.com/fluxergo/fluxergo/gateway"
 )
@@ -20,6 +17,8 @@ type (
 
 	// Conn is a complete voice conn to fluxer. It holds the Gateway and voiceudp.UDPConn conn and combines them.
 	Conn interface {
+		LiveKit() *LivekitConn
+
 		// ChannelID returns the ID of the voice channel the voice Conn is openedChan to.
 		ChannelID() *snowflake.ID
 
@@ -43,21 +42,8 @@ type (
 
 		// HandleVoiceServerUpdate provides the gateway.EventVoiceServerUpdate to the voice conn. Which is needed to connect to the voice Gateway.
 		HandleVoiceServerUpdate(update gateway.EventVoiceServerUpdate)
-
-		Room() *lksdk.Room
 	}
 )
-
-type State struct {
-	GuildID snowflake.ID
-	UserID  snowflake.ID
-
-	ChannelID    *snowflake.ID
-	SessionID    string
-	Token        string
-	ConnectionID string
-	Endpoint     string
-}
 
 // NewConn returns a new default voice conn.
 func NewConn(guildID snowflake.ID, userID snowflake.ID, voiceStateUpdateFunc StateUpdateFunc, removeConnFunc func(), opts ...ConnConfigOpt) Conn {
@@ -81,6 +67,8 @@ func NewConn(guildID snowflake.ID, userID snowflake.ID, voiceStateUpdateFunc Sta
 		closed:    closedCancel,
 	}
 
+	conn.liveKitConn = cfg.LiveKitConnCreateFunc()
+
 	return conn
 }
 
@@ -92,7 +80,7 @@ type connImpl struct {
 	state   State
 	stateMu sync.Mutex
 
-	room *lksdk.Room
+	liveKitConn *LivekitConn
 
 	audioSender   AudioSender
 	audioReceiver AudioReceiver
@@ -101,6 +89,10 @@ type connImpl struct {
 	opened    context.CancelFunc
 	closedCtx context.Context
 	closed    context.CancelFunc
+}
+
+func (c *connImpl) LiveKit() *LivekitConn {
+	return c.liveKitConn
 }
 
 func (c *connImpl) ChannelID() *snowflake.ID {
@@ -128,112 +120,26 @@ func (c *connImpl) SetOpusFrameReceiver(handler OpusFrameReceiver) {
 }
 
 func (c *connImpl) HandleVoiceStateUpdate(update gateway.EventVoiceStateUpdate) {
+	c.stateMu.Lock()
+	defer c.stateMu.Unlock()
 	if update.GuildID != c.state.GuildID || update.UserID != c.state.UserID {
 		return
 	}
 
+	c.state.SessionID = update.SessionID
 	if update.ChannelID == nil {
 		c.state.ChannelID = nil
-		c.room.Disconnect()
+		c.liveKitConn.Close()
 		c.closed()
 	} else {
 		c.state.ChannelID = update.ChannelID
 
-		room := lksdk.NewRoom(&lksdk.RoomCallback{
-			OnDisconnected: func() {
-				c.config.Logger.Info("disconnected from voice")
-			},
-			OnDisconnectedWithReason: func(reason lksdk.DisconnectionReason) {
-				c.config.Logger.Debug("disconnected from voice with reason", slog.Any("reason", reason))
-			},
-			OnParticipantConnected: func(participant *lksdk.RemoteParticipant) {
-				c.config.Logger.Debug("participant connected", slog.String("participant_id", participant.SID()), slog.String("identity", participant.Identity()))
-			},
-			OnParticipantDisconnected: func(participant *lksdk.RemoteParticipant) {
-				c.config.Logger.Debug("participant disconnected", slog.String("participant_id", participant.SID()), slog.String("identity", participant.Identity()))
-			},
-			OnActiveSpeakersChanged: func(participants []lksdk.Participant) {
-				c.config.Logger.Debug("active speakers changed", slog.Int("count", len(participants)))
-			},
-			OnRoomMetadataChanged: func(metadata string) {
-				c.config.Logger.Debug("room metadata changed", slog.String("metadata", metadata))
-			},
-			OnRecordingStatusChanged: func(isRecording bool) {
-				c.config.Logger.Debug("recording status changed", slog.Bool("is_recording", isRecording))
-			},
-			OnRoomMoved: func(roomName string, token string) {
-				c.config.Logger.Debug("room moved", slog.String("room_name", roomName))
-			},
-			OnReconnecting: func() {
-				c.config.Logger.Debug("reconnecting to voice")
-			},
-			OnReconnected: func() {
-				c.config.Logger.Debug("reconnected to voice")
-			},
-			OnLocalTrackSubscribed: func(publication *lksdk.LocalTrackPublication, lp *lksdk.LocalParticipant) {
-				c.config.Logger.Debug("local track subscribed", slog.String("track_sid", publication.SID()), slog.String("participant_id", lp.SID()))
-			},
-			ParticipantCallback: lksdk.ParticipantCallback{
-				OnLocalTrackPublished: func(publication *lksdk.LocalTrackPublication, lp *lksdk.LocalParticipant) {
-					c.config.Logger.Debug("local track published", slog.String("track_sid", publication.SID()), slog.String("participant_id", lp.SID()))
-				},
-				OnLocalTrackUnpublished: func(publication *lksdk.LocalTrackPublication, lp *lksdk.LocalParticipant) {
-					c.config.Logger.Debug("local track unpublished", slog.String("track_sid", publication.SID()), slog.String("participant_id", lp.SID()))
-				},
-				OnTrackMuted: func(pub lksdk.TrackPublication, p lksdk.Participant) {
-					c.config.Logger.Debug("track muted", slog.String("track_sid", pub.SID()), slog.String("participant_id", p.SID()))
-				},
-				OnTrackUnmuted: func(pub lksdk.TrackPublication, p lksdk.Participant) {
-					c.config.Logger.Debug("track unmuted", slog.String("track_sid", pub.SID()), slog.String("participant_id", p.SID()))
-				},
-				OnMetadataChanged: func(oldMetadata string, p lksdk.Participant) {
-					c.config.Logger.Debug("metadata changed", slog.String("participant_id", p.SID()), slog.String("old_metadata", oldMetadata))
-				},
-				OnAttributesChanged: func(changed map[string]string, p lksdk.Participant) {
-					c.config.Logger.Debug("attributes changed", slog.String("participant_id", p.SID()), slog.Any("changed", changed))
-				},
-				OnIsSpeakingChanged: func(p lksdk.Participant) {
-					c.config.Logger.Debug("is speaking changed", slog.String("participant_id", p.SID()), slog.Bool("is_speaking", p.IsSpeaking()))
-				},
-				OnConnectionQualityChanged: func(update *livekit.ConnectionQualityInfo, p lksdk.Participant) {
-					c.config.Logger.Debug("connection quality changed", slog.String("participant_id", p.SID()), slog.Any("quality", update.Quality))
-				},
-				OnTrackSubscribed: func(track *webrtc.TrackRemote, publication *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
-					c.config.Logger.Debug("track subscribed", slog.String("track_sid", publication.SID()), slog.String("participant_id", rp.SID()))
-				},
-				OnTrackUnsubscribed: func(track *webrtc.TrackRemote, publication *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
-					c.config.Logger.Debug("track unsubscribed", slog.String("track_sid", publication.SID()), slog.String("participant_id", rp.SID()))
-				},
-				OnTrackSubscriptionFailed: func(sid string, rp *lksdk.RemoteParticipant) {
-					c.config.Logger.Debug("track subscription failed", slog.String("track_sid", sid), slog.String("participant_id", rp.SID()))
-				},
-				OnTrackPublished: func(publication *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
-					c.config.Logger.Debug("track published", slog.String("track_sid", publication.SID()), slog.String("participant_id", rp.SID()))
-				},
-				OnTrackUnpublished: func(publication *lksdk.RemoteTrackPublication, rp *lksdk.RemoteParticipant) {
-					c.config.Logger.Debug("track unpublished", slog.String("track_sid", publication.SID()), slog.String("participant_id", rp.SID()))
-				},
-				OnDataReceived: func(data []byte, params lksdk.DataReceiveParams) {
-					c.config.Logger.Debug("data received", slog.Int("size", len(data)), slog.String("participant_id", params.SenderIdentity))
-				},
-				OnDataPacket: func(data lksdk.DataPacket, params lksdk.DataReceiveParams) {
-					c.config.Logger.Debug("data packet received", slog.String("participant_id", params.SenderIdentity))
-				},
-				OnTranscriptionReceived: func(transcriptionSegments []*lksdk.TranscriptionSegment, p lksdk.Participant, publication lksdk.TrackPublication) {
-					c.config.Logger.Debug("transcription received", slog.String("participant_id", p.SID()), slog.Int("segments", len(transcriptionSegments)))
-				},
-			},
-		})
-
-		if err := room.JoinWithToken(c.state.Endpoint, c.state.Token); err != nil {
+		if err := c.liveKitConn.Open(c.state); err != nil {
 			c.config.Logger.Error("error connecting to voice", slog.Any("err", err))
 			return
 		}
-
-		c.room = room
 		c.opened()
 	}
-	c.state.SessionID = update.SessionID
 }
 
 func (c *connImpl) HandleVoiceServerUpdate(update gateway.EventVoiceServerUpdate) {
@@ -290,15 +196,11 @@ func (c *connImpl) Close(ctx context.Context) {
 	}); err != nil {
 		c.config.Logger.Error("error sending voice state update to close voice conn", slog.Any("err", err))
 	}
-	defer c.room.Disconnect()
+	defer c.liveKitConn.Close()
 
 	select {
 	case <-c.closedCtx.Done():
 	case <-ctx.Done():
 	}
 	c.removeConnFunc()
-}
-
-func (c *connImpl) Room() *lksdk.Room {
-	return c.room
 }

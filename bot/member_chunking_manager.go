@@ -140,9 +140,8 @@ func cleanupRequest(m *memberChunkingManagerImpl, request *chunkingRequest) {
 }
 
 func (m *memberChunkingManagerImpl) requestGuildMembersChan(ctx context.Context, guildID snowflake.ID, query *string, limit *int, userIDs []snowflake.ID, memberFilterFunc func(member fluxer.Member) bool) (<-chan fluxer.Member, func(), error) {
-	shard, err := m.client.Shard(guildID)
-	if err != nil {
-		return nil, nil, err
+	if !m.client.HasGateway() {
+		return nil, nil, fluxer.ErrNoGateway
 	}
 
 	var nonce string
@@ -177,7 +176,7 @@ func (m *memberChunkingManagerImpl) requestGuildMembersChan(ctx context.Context,
 
 	return memberChan, func() {
 		cleanupRequest(m, request)
-	}, shard.Send(ctx, gateway.OpcodeRequestGuildMembers, command)
+	}, m.client.Gateway.Send(ctx, gateway.OpcodeRequestGuildMembers, command)
 }
 
 func (m *memberChunkingManagerImpl) requestGuildMembers(ctx context.Context, guildID snowflake.ID, query *string, limit *int, userIDs []snowflake.ID, memberFilterFunc func(member fluxer.Member) bool) ([]fluxer.Member, error) {

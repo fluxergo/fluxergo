@@ -7,6 +7,7 @@ import (
 func defaultConnConfig() connConfig {
 	return connConfig{
 		Logger:                  slog.Default(),
+		LiveKitConnCreateFunc:   NewLivekitConn,
 		AudioSenderCreateFunc:   NewAudioSender,
 		AudioReceiverCreateFunc: NewAudioReceiver,
 	}
@@ -14,6 +15,8 @@ func defaultConnConfig() connConfig {
 
 type connConfig struct {
 	Logger *slog.Logger
+
+	LiveKitConnCreateFunc LiveKitConnCreateFunc
 
 	AudioSenderCreateFunc   AudioSenderCreateFunc
 	AudioReceiverCreateFunc AudioReceiverCreateFunc
@@ -33,6 +36,13 @@ func (c *connConfig) apply(opts []ConnConfigOpt) {
 func WithConnLogger(logger *slog.Logger) ConnConfigOpt {
 	return func(config *connConfig) {
 		config.Logger = logger
+	}
+}
+
+// WithConnLiveKitConnCreateFunc sets the Conn(s) used LiveKitConnCreateFunc.
+func WithConnLiveKitConnCreateFunc(liveKitConnCreateFunc LiveKitConnCreateFunc) ConnConfigOpt {
+	return func(config *connConfig) {
+		config.LiveKitConnCreateFunc = liveKitConnCreateFunc
 	}
 }
 

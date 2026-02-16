@@ -87,10 +87,6 @@ func (c *Client) DeleteWebhook(opts ...rest.RequestOpt) error {
 	return c.Rest.DeleteWebhookWithToken(c.ID, c.Token, opts...)
 }
 
-func (c *Client) GetMessage(messageID snowflake.ID, opts ...rest.RequestOpt) (*fluxer.Message, error) {
-	return c.Rest.GetWebhookMessage(c.ID, c.Token, messageID, opts...)
-}
-
 func (c *Client) CreateMessage(messageCreate fluxer.WebhookMessageCreate, params rest.CreateWebhookMessageParams, opts ...rest.RequestOpt) (*fluxer.Message, error) {
 	return c.Rest.CreateWebhookMessage(c.ID, c.Token, messageCreate, params, opts...)
 }
@@ -101,21 +97,4 @@ func (c *Client) CreateContent(content string, opts ...rest.RequestOpt) (*fluxer
 
 func (c *Client) CreateEmbeds(embeds []fluxer.Embed, opts ...rest.RequestOpt) (*fluxer.Message, error) {
 	return c.CreateMessage(fluxer.WebhookMessageCreate{Embeds: embeds}, rest.CreateWebhookMessageParams{}, opts...)
-}
-
-func (c *Client) UpdateMessage(messageID snowflake.ID, messageUpdate fluxer.WebhookMessageUpdate, opts ...rest.RequestOpt) (*fluxer.Message, error) {
-	return c.Rest.UpdateWebhookMessage(c.ID, c.Token, messageID, messageUpdate, opts...)
-}
-
-func (c *Client) UpdateContent(messageID snowflake.ID, content string, opts ...rest.RequestOpt) (*fluxer.Message, error) {
-	return c.UpdateMessage(messageID, fluxer.WebhookMessageUpdate{Content: &content}, opts...)
-}
-
-func (c *Client) UpdateEmbeds(messageID snowflake.ID, embeds []fluxer.Embed, opts ...rest.RequestOpt) (*fluxer.Message, error) {
-	return c.UpdateMessage(messageID, fluxer.WebhookMessageUpdate{Embeds: &embeds}, opts...)
-}
-
-func (c *Client) DeleteMessage(messageID snowflake.ID, opts ...rest.RequestOpt) error {
-	return c.Rest.DeleteWebhookMessage(c.ID, c.Token, messageID, opts...)
-
 }

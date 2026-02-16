@@ -8,6 +8,14 @@ import (
 	"github.com/disgoorg/snowflake/v2"
 )
 
+const (
+	// OpusFrameSize is the size of an opus frame in bytes.
+	OpusFrameSize = 960
+
+	// OpusFrameSizeBytes is the size of an opus frame in bytes.
+	OpusFrameSizeBytes = OpusFrameSize * 2 * 2
+)
+
 // NewOpusReader returns a new OpusFrameProvider that reads opus frames from the given io.Reader.
 func NewOpusReader(r io.Reader) *OpusReader {
 	return &OpusReader{

@@ -5,7 +5,6 @@ import (
 )
 
 var (
-	ErrNoGatewayOrShardManager = errors.New("no gateway or shard manager configured")
 	ErrNoGuildMembersIntent    = errors.New("this operation requires the GUILD_MEMBERS intent")
 	ErrNoShardManager          = errors.New("no shard manager configured")
 	ErrNoGateway               = errors.New("no gateway configured")

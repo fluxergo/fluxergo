@@ -9,7 +9,6 @@ import (
 	"github.com/fluxergo/fluxergo/gateway"
 	"github.com/fluxergo/fluxergo/internal/tokenhelper"
 	"github.com/fluxergo/fluxergo/rest"
-	"github.com/fluxergo/fluxergo/sharding"
 	"github.com/fluxergo/fluxergo/voice"
 )
 
@@ -37,9 +36,6 @@ type config struct {
 
 	Gateway           gateway.Gateway
 	GatewayConfigOpts []gateway.ConfigOpt
-
-	ShardManager           sharding.ShardManager
-	ShardManagerConfigOpts []sharding.ConfigOpt
 
 	Caches          cache.Caches
 	CacheConfigOpts []cache.ConfigOpt
@@ -142,27 +138,6 @@ func WithDefaultGateway() ConfigOpt {
 func WithGatewayConfigOpts(opts ...gateway.ConfigOpt) ConfigOpt {
 	return func(config *config) {
 		config.GatewayConfigOpts = append(config.GatewayConfigOpts, opts...)
-	}
-}
-
-// WithShardManager lets you inject your own sharding.ShardManager.
-func WithShardManager(shardManager sharding.ShardManager) ConfigOpt {
-	return func(config *config) {
-		config.ShardManager = shardManager
-	}
-}
-
-// WithDefaultShardManager creates a sharding.ShardManager with sensible defaults.
-func WithDefaultShardManager() ConfigOpt {
-	return func(config *config) {
-		config.ShardManagerConfigOpts = append(config.ShardManagerConfigOpts, sharding.WithDefault())
-	}
-}
-
-// WithShardManagerConfigOpts lets you configure the default sharding.ShardManager.
-func WithShardManagerConfigOpts(opts ...sharding.ConfigOpt) ConfigOpt {
-	return func(config *config) {
-		config.ShardManagerConfigOpts = append(config.ShardManagerConfigOpts, opts...)
 	}
 }
 
@@ -286,39 +261,6 @@ func BuildClient(
 		cfg.Gateway = gateway.New(token, defaultGatewayEventHandlerFunc(client), cfg.GatewayConfigOpts...)
 	}
 	client.Gateway = cfg.Gateway
-
-	if cfg.ShardManager == nil && len(cfg.ShardManagerConfigOpts) > 0 {
-		var gatewayBotRs *fluxer.GatewayBot
-		gatewayBotRs, err = client.Rest.GetGatewayBot()
-		if err != nil {
-			return nil, err
-		}
-
-		shardIDs := make([]int, gatewayBotRs.Shards)
-		for i := range gatewayBotRs.Shards {
-			shardIDs[i] = i
-		}
-
-		cfg.ShardManagerConfigOpts = append([]sharding.ConfigOpt{
-			sharding.WithShardCount(gatewayBotRs.Shards),
-			sharding.WithShardIDs(shardIDs...),
-			sharding.WithGatewayConfigOpts(
-				gateway.WithURL(gatewayBotRs.URL),
-				gateway.WithLogger(cfg.Logger),
-				gateway.WithOS(os),
-				gateway.WithBrowser(name),
-				gateway.WithDevice(name),
-			),
-			sharding.WithLogger(cfg.Logger),
-			sharding.WithDefaultIdentifyRateLimiterConfigOpt(
-				gateway.WithIdentifyMaxConcurrency(gatewayBotRs.SessionStartLimit.MaxConcurrency),
-				gateway.WithIdentifyRateLimiterLogger(cfg.Logger),
-			),
-		}, cfg.ShardManagerConfigOpts...)
-
-		cfg.ShardManager = sharding.New(token, defaultGatewayEventHandlerFunc(client), cfg.ShardManagerConfigOpts...)
-	}
-	client.ShardManager = cfg.ShardManager
 
 	if cfg.MemberChunkingManager == nil {
 		cfg.MemberChunkingManager = NewMemberChunkingManager(client, cfg.Logger, cfg.MemberChunkingFilter)

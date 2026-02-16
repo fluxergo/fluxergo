@@ -37,23 +37,6 @@ type (
 		// Close stops receiving audio from the voice connection.
 		Close()
 	}
-
-	Packet struct {
-		Type byte
-		// Sequence is the sequence number of the packet.
-		Sequence uint16
-		// Timestamp is the timestamp of the packet.
-		Timestamp uint32
-		// SSRC is the users SSRC of the packet.
-		SSRC         uint32
-		HasExtension bool
-		ExtensionID  int
-		Extension    []byte
-		CSRC         []uint32
-		HeaderSize   int
-		// Opus is the actual opus data of the packet.
-		Opus []byte
-	}
 )
 
 // NewAudioReceiver creates a new AudioReceiver reading audio to the given OpusFrameReceiver from the given Conn.
@@ -97,7 +80,7 @@ func (s *defaultAudioReceiver) CleanupUser(userID snowflake.ID) {
 }
 
 func (s *defaultAudioReceiver) receive() {
-	// packet, err := s.conn.UDP().ReadPacket()
+	// packet, err := s.conn.LiveKit().ReadPacket()
 	// if errors.Is(err, net.ErrClosed) {
 	// 	s.Close()
 	// 	return
@@ -111,7 +94,6 @@ func (s *defaultAudioReceiver) receive() {
 	// 		s.logger.Error("error while receiving opus frame", slog.Any("err", err))
 	// 	}
 	// }
-
 }
 
 func (s *defaultAudioReceiver) Close() {

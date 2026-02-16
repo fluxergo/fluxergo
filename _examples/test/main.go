@@ -30,7 +30,9 @@ func main() {
 
 	client, err := fluxergo.New(token,
 		bot.WithGatewayConfigOpts(
-			gateway.WithPresenceOpts(gateway.WithListeningActivity("your bullshit", gateway.WithActivityState("lol")), gateway.WithOnlineStatus(fluxer.OnlineStatusDND)),
+			gateway.WithPresenceOpts(
+				gateway.WithListeningActivity("your bullshit", gateway.WithActivityState("lol")),
+				gateway.WithOnlineStatus(fluxer.OnlineStatusDND)),
 		),
 		bot.WithEventListenerFunc(onMessage),
 	)

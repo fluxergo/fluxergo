@@ -56,41 +56,6 @@ message, err := client.CreateMessage(fluxer.WebhookMessageCreate{
 }, rest.CreateWebhookMessageParams{})
 ```
 
-### Edit Message
-
-Messages can also be edited
-
-```go
-client := webhook.New(snowflake.ID("webhookID"), "webhookToken")
-
-message, err := client.UpdateContent("870741249114652722", "hello world!")
-
-message, err := client.UpdateEmbeds("870741249114652722", fluxer.NewEmbedBuilder().
-	SetDescription("hello world!").
-	Build(),
-)
-
-message, err := client.UpdateMessage("870741249114652722", fluxer.NewWebhookMessageUpdateBuilder().
-	SetContent("hello world!").
-	Build(),
-	rest.UpdateWebhookMessageParams{},
-)
-
-message, err := client.UpdateMessage("870741249114652722", fluxer.WebhookMessageUpdate{
-	Content: json.Ptr("hello world!"),
-}, rest.UpdateWebhookMessageParams{})
-```
-
-### Delete Message
-
-or deleted
-
-```go
-client := webhook.New(snowflake.ID("webhookID"), "webhookToken")
-
-err := client.DeleteMessage("message_id")
-```
-
 ### Full Example
 
-a full example can be found [here](https://github.com/fluxergo/fluxergo/tree/master/_examples/webhook/example.go)
+a full example can be found [here](../_examples/webhook/main.go)

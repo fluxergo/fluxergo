@@ -10,7 +10,6 @@ import (
 	"github.com/fluxergo/fluxergo/fluxer"
 	"github.com/fluxergo/fluxergo/gateway"
 	"github.com/fluxergo/fluxergo/rest"
-	"github.com/fluxergo/fluxergo/sharding"
 	"github.com/fluxergo/fluxergo/voice"
 )
 
@@ -23,7 +22,6 @@ type Client struct {
 	Logger                *slog.Logger
 	Rest                  rest.Rest
 	EventManager          EventManager
-	ShardManager          sharding.ShardManager
 	Gateway               gateway.Gateway
 	VoiceManager          voice.Manager
 	Caches                cache.Caches
@@ -39,9 +37,6 @@ func (c *Client) Close(ctx context.Context) {
 	}
 	if c.Rest != nil {
 		c.Rest.Close(ctx)
-	}
-	if c.ShardManager != nil {
-		c.ShardManager.Close(ctx)
 	}
 }
 
@@ -71,32 +66,15 @@ func (c *Client) HasGateway() bool {
 	return c.Gateway != nil
 }
 
-func (c *Client) OpenShardManager(ctx context.Context) error {
-	if c.ShardManager == nil {
-		return fluxer.ErrNoShardManager
-	}
-	c.ShardManager.Open(ctx)
-	return nil
-}
-
-func (c *Client) HasShardManager() bool {
-	return c.ShardManager != nil
-}
-
-func (c *Client) Shard(guildID snowflake.ID) (gateway.Gateway, error) {
+func (c *Client) shard() (gateway.Gateway, error) {
 	if c.HasGateway() {
 		return c.Gateway, nil
-	} else if c.HasShardManager() {
-		if shard := c.ShardManager.ShardByGuildID(guildID); shard != nil {
-			return shard, nil
-		}
-		return nil, fluxer.ErrShardNotFound
 	}
-	return nil, fluxer.ErrNoGatewayOrShardManager
+	return nil, fluxer.ErrNoGateway
 }
 
 func (c *Client) UpdateVoiceState(ctx context.Context, data gateway.MessageDataVoiceStateUpdate) error {
-	shard, err := c.Shard(data.GuildID)
+	shard, err := c.shard()
 	if err != nil {
 		return err
 	}
@@ -104,7 +82,7 @@ func (c *Client) UpdateVoiceState(ctx context.Context, data gateway.MessageDataV
 }
 
 func (c *Client) RequestMembers(ctx context.Context, guildID snowflake.ID, presence bool, nonce string, userIDs ...snowflake.ID) error {
-	shard, err := c.Shard(guildID)
+	shard, err := c.shard()
 	if err != nil {
 		return err
 	}
@@ -117,7 +95,7 @@ func (c *Client) RequestMembers(ctx context.Context, guildID snowflake.ID, prese
 }
 
 func (c *Client) RequestMembersWithQuery(ctx context.Context, guildID snowflake.ID, presence bool, nonce string, query string, limit int) error {
-	shard, err := c.Shard(guildID)
+	shard, err := c.shard()
 	if err != nil {
 		return err
 	}
@@ -131,20 +109,9 @@ func (c *Client) RequestMembersWithQuery(ctx context.Context, guildID snowflake.
 }
 
 func (c *Client) SetPresence(ctx context.Context, opts ...gateway.PresenceOpt) error {
-	if !c.HasGateway() {
-		return fluxer.ErrNoGateway
-	}
-	g := c.Gateway
-	return g.Send(ctx, gateway.OpcodePresenceUpdate, applyPresenceFromOpts(g, opts...))
-}
-
-func (c *Client) SetPresenceForShard(ctx context.Context, shardId int, opts ...gateway.PresenceOpt) error {
-	if !c.HasShardManager() {
-		return fluxer.ErrNoShardManager
-	}
-	shard := c.ShardManager.Shard(shardId)
-	if shard == nil {
-		return fluxer.ErrShardNotFound
+	shard, err := c.shard()
+	if err != nil {
+		return err
 	}
 	return shard.Send(ctx, gateway.OpcodePresenceUpdate, applyPresenceFromOpts(shard, opts...))
 }

@@ -2,23 +2,16 @@ package voice
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
+	"net"
 	"time"
 )
-
-// SilenceAudioFrame is a 20ms opus frame of silence.
-var SilenceAudioFrame = []byte{0xF8, 0xFF, 0xFE}
 
 const (
 	// OpusFrameSizeMs is the size of an opus frame in milliseconds.
 	OpusFrameSizeMs = 20
-
-	// OpusFrameSize is the size of an opus frame in bytes.
-	OpusFrameSize = 960
-
-	// OpusFrameSizeBytes is the size of an opus frame in bytes.
-	OpusFrameSizeBytes = OpusFrameSize * 2 * 2
 )
 
 type (
@@ -47,7 +40,6 @@ func NewAudioSender(logger *slog.Logger, opusProvider OpusFrameProvider, conn Co
 		logger:       logger,
 		opusProvider: opusProvider,
 		conn:         conn,
-		silentFrames: 5,
 	}
 }
 
@@ -56,10 +48,7 @@ type defaultAudioSender struct {
 	cancelFunc   context.CancelFunc
 	opusProvider OpusFrameProvider
 	conn         Conn
-
-	silentFrames      int
-	sentSpeakingStop  bool
-	sentSpeakingStart bool
+	trackWriter  io.Writer
 }
 
 func (s *defaultAudioSender) Open() {
@@ -67,6 +56,14 @@ func (s *defaultAudioSender) Open() {
 }
 
 func (s *defaultAudioSender) open() {
+	w, err := s.conn.LiveKit().VideoWriter()
+	if err != nil {
+		s.logger.Error("error creating audio writer", slog.Any("err", err))
+		return
+	}
+	defer w.Close()
+	s.trackWriter = w
+
 	defer s.logger.Debug("closing audio sender")
 	lastFrameSent := time.Now().UnixMilli()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -98,50 +95,25 @@ func (s *defaultAudioSender) send() {
 		return
 	}
 	opus, err := s.opusProvider.ProvideOpusFrame()
-	if err != nil && err != io.EOF {
+	if err != nil && !errors.Is(err, io.EOF) {
 		s.logger.Error("error while reading opus frame", slog.Any("err", err))
 		return
 	}
 	if len(opus) == 0 {
-		// if s.silentFrames > 0 {
-		// 	if _, err = s.conn.UDP().Write(SilenceAudioFrame); err != nil {
-		// 		s.handleErr(err)
-		// 	}
-		// 	s.silentFrames--
-		// } else if !s.sentSpeakingStop {
-		// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		// 	defer cancel()
-		// 	if err = s.conn.SetSpeaking(ctx, SpeakingFlagNone); err != nil {
-		// 		s.handleErr(err)
-		// 	}
-		// 	s.sentSpeakingStop = true
-		// 	s.sentSpeakingStart = false
-		// }
 		return
 	}
 
-	// if !s.sentSpeakingStart {
-	// 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	// 	defer cancel()
-	// 	if err = s.conn.SetSpeaking(ctx, SpeakingFlagMicrophone); err != nil {
-	// 		s.handleErr(err)
-	// 	}
-	// 	s.sentSpeakingStart = true
-	// 	s.sentSpeakingStop = false
-	// 	s.silentFrames = 5
-	// }
-	//
-	// if _, err = s.conn.UDP().Write(opus); err != nil {
-	// 	s.handleErr(err)
-	// }
+	if _, err = s.trackWriter.Write(opus); err != nil {
+		s.handleErr(err)
+	}
 }
 
 func (s *defaultAudioSender) handleErr(err error) {
-	// if errors.Is(err, net.ErrClosed) || errors.Is(err, ErrGatewayNotConnected) {
-	// 	s.Close()
-	// 	return
-	// }
-	// s.logger.Error("failed to send audio", slog.Any("err", err))
+	if errors.Is(err, net.ErrClosed) {
+		s.Close()
+		return
+	}
+	s.logger.Error("failed to send audio", slog.Any("err", err))
 }
 
 func (s *defaultAudioSender) Close() {

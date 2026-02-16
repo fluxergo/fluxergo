@@ -17,9 +17,6 @@ import (
 
 	"github.com/disgoorg/snowflake/v2"
 	"github.com/livekit/protocol/logger"
-	lksdk "github.com/livekit/server-sdk-go/v2"
-	"github.com/pion/webrtc/v4"
-	"github.com/pion/webrtc/v4/pkg/media"
 
 	"github.com/fluxergo/fluxergo"
 	"github.com/fluxergo/fluxergo/bot"
@@ -36,7 +33,7 @@ var (
 )
 
 func main() {
-	// slog.SetLogLoggerLevel(slog.LevelDebug)
+	slog.SetLogLoggerLevel(slog.LevelDebug)
 	slog.Info("starting up")
 	slog.Info("fluxergo version", slog.String("version", fluxergo.Version))
 
@@ -77,38 +74,12 @@ func play(client *bot.Client) {
 	}
 	slog.Info("connected to voice channel")
 
-	room := conn.Room()
-	for {
-		if room.ConnectionState() != lksdk.ConnectionStateConnected {
-			slog.Warn("connection state is ", room.ConnectionState())
-			time.Sleep(time.Second)
-		} else {
-			slog.Info("CONNECTED")
-			break
-		}
-	}
-
-	slog.Info("creating track")
-
-	track, err := lksdk.NewLocalTrack(webrtc.RTPCodecCapability{
-		MimeType:    webrtc.MimeTypeOpus,
-		ClockRate:   48000,
-		Channels:    2,
-		SDPFmtpLine: "",
-	})
+	w, err := conn.LiveKit().AudioWriter()
 	if err != nil {
-		panic("error creating track: " + err.Error())
+		panic("error creating audio writer: " + err.Error())
 	}
-
-	slog.Info("publishing track")
-	pub, err := room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
-		Name: "lol",
-	})
-	if err != nil {
-		panic("error publishing track: " + err.Error())
-	}
-
-	slog.Info("published track", slog.String("track_id", pub.SID()))
+	defer w.Close()
+	slog.Info("created audio writer")
 
 	ticker := time.NewTicker(time.Millisecond * 20)
 	defer ticker.Stop()
@@ -134,11 +105,7 @@ func play(client *bot.Client) {
 				break
 			}
 
-			err = track.WriteSample(media.Sample{
-				Data:      buf,
-				Duration:  20 * time.Millisecond,
-				Timestamp: time.Now(),
-			}, nil)
+			_, err = w.Write(buf)
 			if err != nil {
 				logger.Errorw("error writing sample", err)
 			}
