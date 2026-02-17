@@ -17,19 +17,13 @@ type (
 
 	// Conn is a complete voice conn to fluxer. It holds the Gateway and voiceudp.UDPConn conn and combines them.
 	Conn interface {
-		LiveKit() *LivekitConn
+		LiveKit() *LiveKitConn
 
 		// ChannelID returns the ID of the voice channel the voice Conn is openedChan to.
 		ChannelID() *snowflake.ID
 
 		// GuildID returns the ID of the guild the voice Conn is openedChan to.
 		GuildID() snowflake.ID
-
-		// SetOpusFrameProvider lets you inject your own OpusFrameProvider.
-		SetOpusFrameProvider(handler OpusFrameProvider)
-
-		// SetOpusFrameReceiver lets you inject your own OpusFrameReceiver.
-		SetOpusFrameReceiver(handler OpusFrameReceiver)
 
 		// Open opens the voice conn. It will connect to the voice gateway and start the Conn conn after it receives the Gateway events.
 		Open(ctx context.Context, channelID snowflake.ID, selfMute bool, selfDeaf bool) error
@@ -80,10 +74,7 @@ type connImpl struct {
 	state   State
 	stateMu sync.Mutex
 
-	liveKitConn *LivekitConn
-
-	audioSender   AudioSender
-	audioReceiver AudioReceiver
+	liveKitConn *LiveKitConn
 
 	openedCtx context.Context
 	opened    context.CancelFunc
@@ -91,7 +82,7 @@ type connImpl struct {
 	closed    context.CancelFunc
 }
 
-func (c *connImpl) LiveKit() *LivekitConn {
+func (c *connImpl) LiveKit() *LiveKitConn {
 	return c.liveKitConn
 }
 
@@ -101,22 +92,6 @@ func (c *connImpl) ChannelID() *snowflake.ID {
 
 func (c *connImpl) GuildID() snowflake.ID {
 	return c.state.GuildID
-}
-
-func (c *connImpl) SetOpusFrameProvider(provider OpusFrameProvider) {
-	if c.audioSender != nil {
-		c.audioSender.Close()
-	}
-	c.audioSender = c.config.AudioSenderCreateFunc(c.config.Logger, provider, c)
-	c.audioSender.Open()
-}
-
-func (c *connImpl) SetOpusFrameReceiver(handler OpusFrameReceiver) {
-	if c.audioReceiver != nil {
-		c.audioReceiver.Close()
-	}
-	c.audioReceiver = c.config.AudioReceiverCreateFunc(c.config.Logger, handler, c)
-	c.audioReceiver.Open()
 }
 
 func (c *connImpl) HandleVoiceStateUpdate(update gateway.EventVoiceStateUpdate) {
@@ -161,6 +136,7 @@ func (c *connImpl) HandleVoiceServerUpdate(update gateway.EventVoiceServerUpdate
 			GuildID:      c.state.GuildID,
 			ChannelID:    c.state.ChannelID,
 			ConnectionID: &c.state.ConnectionID,
+			SelfStream:   true,
 		}); err != nil {
 			c.config.Logger.Error("error sending voice state update to connect to voice gateway", slog.Any("err", err))
 		}
@@ -176,7 +152,7 @@ func (c *connImpl) Open(ctx context.Context, channelID snowflake.ID, selfMute bo
 		SelfMute:     selfMute,
 		SelfDeaf:     selfDeaf,
 		SelfVideo:    false,
-		SelfStream:   false,
+		SelfStream:   true,
 		ConnectionID: nil,
 	}); err != nil {
 		return err

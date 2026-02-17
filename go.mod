@@ -9,6 +9,8 @@ require (
 	github.com/klauspost/compress v1.18.4
 	github.com/livekit/protocol v1.44.1-0.20260120134243-0914cc74653e
 	github.com/livekit/server-sdk-go/v2 v2.13.3
+	github.com/pion/webrtc/v4 v4.2.6
+	github.com/sasha-s/go-csync v0.0.0-20240107134140-fcbab37b09ad
 )
 
 require (
@@ -56,10 +58,8 @@ require (
 	github.com/pion/stun/v3 v3.1.1 // indirect
 	github.com/pion/transport/v4 v4.0.1 // indirect
 	github.com/pion/turn/v4 v4.1.4 // indirect
-	github.com/pion/webrtc/v4 v4.2.6 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/redis/go-redis/v9 v9.17.3 // indirect
-	github.com/sasha-s/go-csync v0.0.0-20240107134140-fcbab37b09ad // indirect
 	github.com/twitchtv/twirp v8.1.3+incompatible // indirect
 	github.com/wlynxg/anet v0.0.5 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect

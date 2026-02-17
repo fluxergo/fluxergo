@@ -21,6 +21,7 @@ import (
 	"github.com/fluxergo/fluxergo"
 	"github.com/fluxergo/fluxergo/bot"
 	"github.com/fluxergo/fluxergo/events"
+	"github.com/fluxergo/fluxergo/voice"
 )
 
 var (
@@ -29,7 +30,7 @@ var (
 	channelID = snowflake.GetEnv("fluxergo_channel_id")
 
 	//go:embed nico.dca
-	testOpus []byte
+	testAudio []byte
 )
 
 func main() {
@@ -74,22 +75,25 @@ func play(client *bot.Client) {
 	}
 	slog.Info("connected to voice channel")
 
-	w, err := conn.LiveKit().AudioWriter()
+	w, err := conn.LiveKit().AudioWriter("audio", voice.AudioSourceMicrophone)
 	if err != nil {
 		panic("error creating audio writer: " + err.Error())
 	}
 	defer w.Close()
 	slog.Info("created audio writer")
 
+	go writeOpus(w)
+}
+
+func writeOpus(w io.Writer) {
 	ticker := time.NewTicker(time.Millisecond * 20)
 	defer ticker.Stop()
 
 	var frameLen int16
 	for {
-		r := bytes.NewReader(testOpus)
+		r := bytes.NewReader(testAudio)
 		for range ticker.C {
-			err = binary.Read(r, binary.LittleEndian, &frameLen)
-			if err != nil {
+			if err := binary.Read(r, binary.LittleEndian, &frameLen); err != nil {
 				if err == io.EOF || errors.Is(err, io.ErrUnexpectedEOF) {
 					break
 				}
@@ -100,7 +104,7 @@ func play(client *bot.Client) {
 			}
 
 			buf := make([]byte, frameLen)
-			_, err = r.Read(buf)
+			_, err := r.Read(buf)
 			if err != nil {
 				break
 			}
@@ -111,5 +115,4 @@ func play(client *bot.Client) {
 			}
 		}
 	}
-
 }

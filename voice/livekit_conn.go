@@ -36,7 +36,7 @@ type State struct {
 }
 
 type (
-	LiveKitConnCreateFunc func() *LivekitConn
+	LiveKitConnCreateFunc func() *LiveKitConn
 
 	Packet struct {
 		Type byte
@@ -56,10 +56,10 @@ type (
 	}
 )
 
-func NewLivekitConn() *LivekitConn {
+func NewLivekitConn() *LiveKitConn {
 	logger := slog.Default()
 
-	conn := &LivekitConn{
+	conn := &LiveKitConn{
 		logger: logger,
 	}
 
@@ -153,20 +153,20 @@ func NewLivekitConn() *LivekitConn {
 	return conn
 }
 
-type LivekitConn struct {
+type LiveKitConn struct {
 	logger *slog.Logger
 	room   *lksdk.Room
 }
 
-func (l *LivekitConn) Open(state State) error {
+func (l *LiveKitConn) Open(state State) error {
 	return l.room.JoinWithToken(state.Endpoint, state.Token)
 }
 
-func (l *LivekitConn) Close() {
+func (l *LiveKitConn) Close() {
 	l.room.Disconnect()
 }
 
-func (l *LivekitConn) Status() Status {
+func (l *LiveKitConn) Status() Status {
 	switch l.room.ConnectionState() {
 	case lksdk.ConnectionStateConnected:
 		return StatusConnected
@@ -177,15 +177,51 @@ func (l *LivekitConn) Status() Status {
 	}
 }
 
-func (l *LivekitConn) AudioWriter() (io.WriteCloser, error) {
-	return l.writer("audio", webrtc.MimeTypeOpus, 48000, 2)
+type AudioSource int
+
+const (
+	AudioSourceMicrophone AudioSource = iota
+	AudioSourceScreenShare
+)
+
+func (s AudioSource) toLiveKit() livekit.TrackSource {
+	switch s {
+	case AudioSourceMicrophone:
+		return livekit.TrackSource_MICROPHONE
+	case AudioSourceScreenShare:
+		return livekit.TrackSource_SCREEN_SHARE_AUDIO
+	default:
+		return livekit.TrackSource_UNKNOWN
+	}
 }
 
-func (l *LivekitConn) VideoWriter() (io.WriteCloser, error) {
-	return l.writer("video", webrtc.MimeTypeVP8, 90000, 0)
+type VideoSource int
+
+const (
+	VideoSourceCamera VideoSource = iota
+	VideoSourceScreenShare
+)
+
+func (s VideoSource) toLiveKit() livekit.TrackSource {
+	switch s {
+	case VideoSourceCamera:
+		return livekit.TrackSource_CAMERA
+	case VideoSourceScreenShare:
+		return livekit.TrackSource_SCREEN_SHARE
+	default:
+		return livekit.TrackSource_UNKNOWN
+	}
 }
 
-func (l *LivekitConn) writer(name string, mimetype string, rate int, channels int) (io.WriteCloser, error) {
+func (l *LiveKitConn) AudioWriter(name string, source AudioSource) (io.WriteCloser, error) {
+	return l.writer(name, source.toLiveKit(), webrtc.MimeTypeOpus, 48000, 2)
+}
+
+func (l *LiveKitConn) VideoWriter(name string, source VideoSource) (io.WriteCloser, error) {
+	return l.writer(name, source.toLiveKit(), webrtc.MimeTypeH264, 90000, 0)
+}
+
+func (l *LiveKitConn) writer(name string, source livekit.TrackSource, mimetype string, rate int, channels int) (io.WriteCloser, error) {
 	track, err := lksdk.NewLocalTrack(webrtc.RTPCodecCapability{
 		MimeType:  mimetype,
 		ClockRate: uint32(rate),
@@ -195,32 +231,43 @@ func (l *LivekitConn) writer(name string, mimetype string, rate int, channels in
 		return nil, err
 	}
 
-	if _, err = l.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
+	_, err = l.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
 		Name:              name,
-		Source:            0,
-		VideoWidth:        0,
-		VideoHeight:       0,
+		Source:            source,
+		VideoWidth:        1920,
+		VideoHeight:       1080,
 		DisableDTX:        false,
 		Stereo:            false,
 		Stream:            "",
 		Encryption:        0,
 		BackupCodecPolicy: 0,
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
 
-	return &trackWriter{track: track}, nil
+	var sampleDuration time.Duration
+	if source == livekit.TrackSource_MICROPHONE || source == livekit.TrackSource_SCREEN_SHARE_AUDIO {
+		sampleDuration = 20 * time.Millisecond
+	} else if source == livekit.TrackSource_CAMERA || source == livekit.TrackSource_SCREEN_SHARE {
+		sampleDuration = 33 * time.Millisecond
+	}
+
+	return &trackWriter{
+		track:          track,
+		sampleDuration: sampleDuration,
+	}, nil
 }
 
 type trackWriter struct {
-	track *lksdk.LocalTrack
+	track          *lksdk.LocalTrack
+	sampleDuration time.Duration
 }
 
 func (t *trackWriter) Write(p []byte) (int, error) {
 	err := t.track.WriteSample(media.Sample{
-		Data:      p,
-		Timestamp: time.Now(),
-		Duration:  20 * time.Millisecond,
+		Data:     p,
+		Duration: t.sampleDuration,
 	}, nil)
 
 	return len(p), err
