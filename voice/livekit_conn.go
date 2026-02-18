@@ -214,43 +214,48 @@ func (s VideoSource) toLiveKit() livekit.TrackSource {
 }
 
 func (l *LiveKitConn) AudioWriter(name string, source AudioSource) (io.WriteCloser, error) {
-	return l.writer(name, source.toLiveKit(), webrtc.MimeTypeOpus, 48000, 2)
+	return l.writer(webrtc.RTPCodecCapability{
+		MimeType:  webrtc.MimeTypeOpus,
+		ClockRate: 48000,
+		Channels:  2,
+	}, lksdk.TrackPublicationOptions{
+		Name:   name,
+		Source: source.toLiveKit(),
+	}, 0)
 }
 
-func (l *LiveKitConn) VideoWriter(name string, source VideoSource) (io.WriteCloser, error) {
-	return l.writer(name, source.toLiveKit(), webrtc.MimeTypeH264, 90000, 0)
+func (l *LiveKitConn) VideoWriter(name string, source VideoSource, width int, height int, fps int) (io.WriteCloser, error) {
+	return l.writer(webrtc.RTPCodecCapability{
+		MimeType:  webrtc.MimeTypeH264,
+		ClockRate: 90000,
+		Channels:  0,
+	}, lksdk.TrackPublicationOptions{
+		Name:        name,
+		Source:      source.toLiveKit(),
+		VideoWidth:  width,
+		VideoHeight: height,
+	}, fps)
 }
 
-func (l *LiveKitConn) writer(name string, source livekit.TrackSource, mimetype string, rate int, channels int) (io.WriteCloser, error) {
-	track, err := lksdk.NewLocalTrack(webrtc.RTPCodecCapability{
-		MimeType:  mimetype,
-		ClockRate: uint32(rate),
-		Channels:  uint16(channels),
-	})
+func (l *LiveKitConn) writer(c webrtc.RTPCodecCapability, options lksdk.TrackPublicationOptions, fps int) (io.WriteCloser, error) {
+	track, err := lksdk.NewLocalTrack(c)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = l.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
-		Name:              name,
-		Source:            source,
-		VideoWidth:        1920,
-		VideoHeight:       1080,
-		DisableDTX:        false,
-		Stereo:            false,
-		Stream:            "",
-		Encryption:        0,
-		BackupCodecPolicy: 0,
-	})
+	_, err = l.room.LocalParticipant.PublishTrack(track, &options)
 	if err != nil {
 		return nil, err
 	}
 
 	var sampleDuration time.Duration
-	if source == livekit.TrackSource_MICROPHONE || source == livekit.TrackSource_SCREEN_SHARE_AUDIO {
-		sampleDuration = 20 * time.Millisecond
-	} else if source == livekit.TrackSource_CAMERA || source == livekit.TrackSource_SCREEN_SHARE {
-		sampleDuration = 33 * time.Millisecond
+	switch c.MimeType {
+	case webrtc.MimeTypeOpus:
+		sampleDuration = time.Millisecond * 20
+	case webrtc.MimeTypeH264:
+		sampleDuration = time.Second / time.Duration(fps)
+	default:
+		return nil, errors.New("unsupported codec")
 	}
 
 	return &trackWriter{

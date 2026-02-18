@@ -26,7 +26,7 @@ type (
 		GuildID() snowflake.ID
 
 		// Open opens the voice conn. It will connect to the voice gateway and start the Conn conn after it receives the Gateway events.
-		Open(ctx context.Context, channelID snowflake.ID, selfMute bool, selfDeaf bool) error
+		Open(ctx context.Context, channelID snowflake.ID) error
 
 		// Close closes the voice conn. It will close the Conn conn and disconnect from the voice gateway.
 		Close(ctx context.Context)
@@ -136,23 +136,18 @@ func (c *connImpl) HandleVoiceServerUpdate(update gateway.EventVoiceServerUpdate
 			GuildID:      c.state.GuildID,
 			ChannelID:    c.state.ChannelID,
 			ConnectionID: &c.state.ConnectionID,
-			SelfStream:   true,
 		}); err != nil {
 			c.config.Logger.Error("error sending voice state update to connect to voice gateway", slog.Any("err", err))
 		}
 	}()
 }
 
-func (c *connImpl) Open(ctx context.Context, channelID snowflake.ID, selfMute bool, selfDeaf bool) error {
+func (c *connImpl) Open(ctx context.Context, channelID snowflake.ID) error {
 	c.config.Logger.Debug("opening voice conn")
 
 	if err := c.voiceStateUpdateFunc(ctx, gateway.MessageDataVoiceStateUpdate{
 		GuildID:      c.state.GuildID,
 		ChannelID:    &channelID,
-		SelfMute:     selfMute,
-		SelfDeaf:     selfDeaf,
-		SelfVideo:    false,
-		SelfStream:   true,
 		ConnectionID: nil,
 	}); err != nil {
 		return err

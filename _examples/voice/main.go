@@ -82,10 +82,10 @@ func play(client *bot.Client) {
 	defer w.Close()
 	slog.Info("created audio writer")
 
-	go writeOpus(w)
+	writeAudio(w)
 }
 
-func writeOpus(w io.Writer) {
+func writeAudio(w io.Writer) {
 	ticker := time.NewTicker(time.Millisecond * 20)
 	defer ticker.Stop()
 

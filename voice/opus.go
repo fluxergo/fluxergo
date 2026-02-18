@@ -16,6 +16,9 @@ const (
 	OpusFrameSizeBytes = OpusFrameSize * 2 * 2
 )
 
+// UserFilterFunc is used as a filter for which users to receive audio from.
+type UserFilterFunc func(userID snowflake.ID) bool
+
 // NewOpusReader returns a new OpusFrameProvider that reads opus frames from the given io.Reader.
 func NewOpusReader(r io.Reader) *OpusReader {
 	return &OpusReader{
