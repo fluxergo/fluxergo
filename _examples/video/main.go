@@ -105,18 +105,12 @@ func onMessage(e *events.MessageCreate) {
 func play(client *bot.Client, guildID snowflake.ID, channelID snowflake.ID, messageChannelID snowflake.ID, url string) {
 	conn := client.VoiceManager.CreateConn(guildID)
 
-	videoReader, err := getReader(url, "bv*")
+	videoReader, audioReader, err := startStream(url)
 	if err != nil {
 		client.Rest.CreateMessage(messageChannelID, fluxer.MessageCreate{
-			Content: "Error getting video reader: " + err.Error(),
+			Content: "Error starting stream: " + err.Error(),
 		})
-	}
-
-	audioReader, err := getReader(url, "ba")
-	if err != nil {
-		client.Rest.CreateMessage(messageChannelID, fluxer.MessageCreate{
-			Content: "Error getting audio reader: " + err.Error(),
-		})
+		return
 	}
 
 	if err = conn.Open(context.Background(), channelID); err != nil {
@@ -148,48 +142,39 @@ func play(client *bot.Client, guildID snowflake.ID, channelID snowflake.ID, mess
 	select {}
 }
 
-func getReader(url string, format string) (io.Reader, error) {
-	cmd := exec.Command(
+func startStream(url string) (video io.Reader, audio io.Reader, err error) {
+	// yt-dlp -> stdout
+	ytdlp := exec.Command(
 		"yt-dlp",
-		"-f", format,
+		"-f", "bv*+ba/b",
 		"--quiet",
 		"--no-progress",
 		"-o", "-",
 		url,
 	)
 
-	stdout, err := cmd.StdoutPipe()
+	ytdlpOut, err := ytdlp.StdoutPipe()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	stdErr, err := cmd.StderrPipe()
+	if err = ytdlp.Start(); err != nil {
+		return nil, nil, err
+	}
+
+	// Create extra pipe for ffmpeg audio output
+	audioPipeReader, audioPipeWriter, err := os.Pipe()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	if err = cmd.Start(); err != nil {
-		return nil, err
-	}
-
-	go func() {
-		data, _ := io.ReadAll(stdErr)
-		if len(data) > 0 {
-			slog.Error("yt-dlp stderr", slog.String("format", format), slog.String("output", string(data)))
-		}
-		if err = cmd.Wait(); err != nil {
-			slog.Error("error waiting for yt-dlp", slog.String("format", format), slog.Any("err", err))
-		}
-	}()
-
-	return stdout, nil
-}
-
-func writeVideo(w io.Writer, r io.Reader) {
-	cmd := exec.Command(
+	ffmpeg := exec.Command(
 		"ffmpeg",
 		"-re",
 		"-i", "pipe:0",
+
+		// Video output
+		"-map", "0:v:0",
 		"-c:v", "libx264",
 		"-profile:v", "baseline",
 		"-pix_fmt", "yuv420p",
@@ -201,40 +186,40 @@ func writeVideo(w io.Writer, r io.Reader) {
 		"-b:v", "2500k",
 		"-maxrate", "2500k",
 		"-bufsize", "5000k",
-		"-an",
 		"-f", "h264",
 		"pipe:1",
+
+		// Audio output (to fd 3)
+		"-map", "0:a:0",
+		"-c:a", "libopus",
+		"-ac", "2",
+		"-ar", "48000",
+		"-b:a", "128K",
+		"-f", "ogg",
+		"pipe:3",
 	)
 
-	cmd.Stdin = r
+	ffmpeg.Stdin = ytdlpOut
+	ffmpeg.ExtraFiles = []*os.File{audioPipeWriter}
 
-	pipe, err := cmd.StdoutPipe()
+	videoPipe, err := ffmpeg.StdoutPipe()
 	if err != nil {
-		slog.Error("error creating stdout pipe", slog.Any("err", err))
-		return
+		return nil, nil, err
 	}
 
-	stdErr, err := cmd.StderrPipe()
-	if err != nil {
-		slog.Error("error creating stderr pipe", slog.Any("err", err))
-		return
+	if err = ffmpeg.Start(); err != nil {
+		return nil, nil, err
 	}
 
-	if err = cmd.Start(); err != nil {
-		slog.Error("error starting command", slog.Any("err", err))
-		return
-	}
-	go func() {
-		data, _ := io.ReadAll(stdErr)
-		if len(data) > 0 {
-			slog.Error("ffmpeg stderr", slog.String("output", string(data)))
-		}
-		if err = cmd.Wait(); err != nil {
-			slog.Error("failed to wait video ffmpeg", slog.Any("error", err))
-		}
-	}()
+	// Close writer in parent so ffmpeg owns it
+	audioPipeWriter.Close()
 
-	reader := bufio.NewReader(pipe)
+	return videoPipe, audioPipeReader, nil
+}
+
+func writeVideo(w io.Writer, r io.Reader) {
+	reader := bufio.NewReader(r)
+
 	var nalBuf []byte
 	startCode := []byte{0x00, 0x00, 0x00, 0x01}
 
@@ -271,47 +256,7 @@ func writeVideo(w io.Writer, r io.Reader) {
 }
 
 func writeAudio(w io.Writer, r io.Reader) {
-	cmd := exec.Command(
-		"ffmpeg",
-		"-re",
-		"-i", "pipe:0",
-		"-c:a", "libopus",
-		"-ac", "2",
-		"-ar", "48000",
-		"-b:a", "64K",
-		"-f", "ogg",
-		"-vn",
-		"pipe:1",
-	)
-	cmd.Stdin = r
-
-	pipe, err := cmd.StdoutPipe()
-	if err != nil {
-		slog.Error("error creating stdout pipe", slog.Any("err", err))
-		return
-	}
-
-	stdErr, err := cmd.StderrPipe()
-	if err != nil {
-		slog.Error("error creating stderr pipe", slog.Any("err", err))
-		return
-	}
-
-	decoder := ogg.NewPacketDecoder(ogg.NewDecoder(bufio.NewReaderSize(pipe, 65307)))
-
-	if err = cmd.Start(); err != nil {
-		slog.Error("error starting video", slog.Any("err", err))
-		return
-	}
-	go func() {
-		data, _ := io.ReadAll(stdErr)
-		if len(data) > 0 {
-			slog.Error("ffmpeg stderr", slog.String("output", string(data)))
-		}
-		if err = cmd.Wait(); err != nil {
-			slog.Error("failed to wait audio ffmpeg", slog.Any("error", err))
-		}
-	}()
+	decoder := ogg.NewPacketDecoder(ogg.NewDecoder(bufio.NewReader(r)))
 
 	for {
 		data, _, err := decoder.Decode()
