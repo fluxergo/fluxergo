@@ -1,6 +1,5 @@
 package main
 
-import "C"
 import (
 	"bufio"
 	"context"
@@ -25,7 +24,12 @@ import (
 	"github.com/fluxergo/fluxergo/voice"
 )
 
-var token = os.Getenv("fluxergo_token")
+var (
+	token            = os.Getenv("fluxergo_token")
+	guildID          = snowflake.GetEnv("fluxergo_guild_id")
+	channelID        = snowflake.GetEnv("fluxergo_channel_id")
+	messageChannelID = snowflake.GetEnv("fluxergo_message_channel_id")
+)
 
 func main() {
 	slog.SetLogLoggerLevel(slog.LevelDebug)
@@ -59,14 +63,12 @@ func main() {
 }
 
 func onMessage(e *events.MessageCreate) {
-	if !strings.HasPrefix(e.Message.Content, "!") {
+	content := e.Message.Content
+	if !strings.HasPrefix(content, "!") {
 		return
 	}
-	go onCommand(e)
-}
 
-func onCommand(e *events.MessageCreate) {
-	content := strings.TrimPrefix(e.Message.Content, "!")
+	content = strings.TrimPrefix(content, "!")
 	fields := strings.FieldsFunc(content, func(r rune) bool {
 		return r == ' '
 	})
@@ -79,20 +81,6 @@ func onCommand(e *events.MessageCreate) {
 		e.Client().Rest.CreateMessage(e.Message.ChannelID, fluxer.MessageCreate{
 			Content: "Pong!",
 		})
-	case "join":
-		channelID, ok := fluxer.ParseChannelMention(args[0])
-		if !ok {
-			e.Client().Rest.CreateMessage(e.Message.ChannelID, fluxer.MessageCreate{
-				Content: "Please provide a valid channel.",
-			})
-			return
-		}
-		if err := e.Client().VoiceManager.CreateConn(*e.GuildID).Open(context.Background(), channelID); err != nil {
-			e.Client().Rest.CreateMessage(e.Message.ChannelID, fluxer.MessageCreate{
-				Content: "Error connecting to voice channel: " + err.Error(),
-			})
-			return
-		}
 	case "play":
 		if len(args) == 0 {
 			e.Client().Rest.CreateMessage(e.Message.ChannelID, fluxer.MessageCreate{
@@ -101,7 +89,7 @@ func onCommand(e *events.MessageCreate) {
 			return
 		}
 		url := args[0]
-		play(e.Client(), *e.GuildID, e.ChannelID, url)
+		go play(e.Client(), *e.GuildID, 1471575381777371381, e.ChannelID, url)
 	case "stop":
 		conn := e.Client().VoiceManager.GetConn(*e.GuildID)
 		if conn != nil {
@@ -110,38 +98,37 @@ func onCommand(e *events.MessageCreate) {
 	}
 }
 
-func play(client *bot.Client, guildID snowflake.ID, channelID snowflake.ID, url string) {
-	conn := client.VoiceManager.GetConn(guildID)
-	if conn == nil {
-		client.Rest.CreateMessage(channelID, fluxer.MessageCreate{
-			Content: "Not connected to a voice channel. Use !join first.",
+func play(client *bot.Client, guildID snowflake.ID, channelID snowflake.ID, messageChannelID snowflake.ID, url string) {
+	conn := client.VoiceManager.CreateConn(guildID)
+
+	videoReader, audioReader, err := startStream(url)
+	if err != nil {
+		client.Rest.CreateMessage(messageChannelID, fluxer.MessageCreate{
+			Content: "Error starting stream: " + err.Error(),
 		})
 		return
 	}
 
-	videoReader, audioReader, err := startStream(url)
-	if err != nil {
-		client.Rest.CreateMessage(channelID, fluxer.MessageCreate{
-			Content: "Error starting stream: " + err.Error(),
+	if err = conn.Open(context.Background(), channelID); err != nil {
+		client.Rest.CreateMessage(messageChannelID, fluxer.MessageCreate{
+			Content: "Error connecting to voice channel: " + err.Error(),
 		})
 		return
 	}
 
 	video, err := conn.LiveKit().VideoWriter("video", voice.VideoSourceScreenShare, 1280, 720, 30)
 	if err != nil {
-		client.Rest.CreateMessage(channelID, fluxer.MessageCreate{
+		client.Rest.CreateMessage(messageChannelID, fluxer.MessageCreate{
 			Content: "Error creating video writer: " + err.Error(),
 		})
-		return
 	}
 	defer video.Close()
 
 	audio, err := conn.LiveKit().AudioWriter("audio", voice.AudioSourceScreenShare)
 	if err != nil {
-		client.Rest.CreateMessage(channelID, fluxer.MessageCreate{
+		client.Rest.CreateMessage(messageChannelID, fluxer.MessageCreate{
 			Content: "Error creating audio writer: " + err.Error(),
 		})
-		return
 	}
 	defer audio.Close()
 
@@ -152,25 +139,6 @@ func play(client *bot.Client, guildID snowflake.ID, channelID snowflake.ID, url 
 }
 
 func startStream(url string) (video io.Reader, audio io.Reader, err error) {
-	// yt-dlp -> stdout
-	ytdlp := exec.Command(
-		"yt-dlp",
-		"-f", "bv*+ba/b",
-		"--quiet",
-		"--no-progress",
-		"-o", "-",
-		url,
-	)
-	ytdlp.Stderr = os.Stderr
-
-	ytdlpOut, err := ytdlp.StdoutPipe()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if err = ytdlp.Start(); err != nil {
-		return nil, nil, err
-	}
 
 	// Create extra pipe for ffmpeg audio output
 	audioPipeReader, audioPipeWriter, err := os.Pipe()
@@ -181,7 +149,7 @@ func startStream(url string) (video io.Reader, audio io.Reader, err error) {
 	ffmpeg := exec.Command(
 		"ffmpeg",
 		"-re",
-		"-i", "pipe:0",
+		"-i", url,
 
 		// Video output
 		"-map", "0:v:0",
@@ -209,7 +177,6 @@ func startStream(url string) (video io.Reader, audio io.Reader, err error) {
 		"pipe:3",
 	)
 
-	ffmpeg.Stdin = ytdlpOut
 	ffmpeg.Stderr = os.Stderr
 	ffmpeg.ExtraFiles = []*os.File{audioPipeWriter}
 

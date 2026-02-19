@@ -102,3 +102,16 @@ func EmailMention(email string) string {
 func PhoneNumberMention(number string) string {
 	return fmt.Sprintf("<%s>", number)
 }
+
+func ParseChannelMention(mention string) (snowflake.ID, bool) {
+	matches := MentionTypeChannel.FindStringSubmatch(mention)
+	if len(matches) != 2 {
+		return 0, false
+	}
+
+	id, err := snowflake.Parse(matches[1])
+	if err != nil {
+		return 0, false
+	}
+	return id, true
+}
