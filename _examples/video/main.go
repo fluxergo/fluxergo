@@ -33,7 +33,7 @@ var (
 )
 
 func main() {
-	slog.SetLogLoggerLevel(slog.LevelDebug)
+	slog.SetLogLoggerLevel(slog.LevelInfo)
 	slog.Info("starting up")
 	slog.Info("fluxergo version", slog.String("version", fluxergo.Version))
 
@@ -152,6 +152,7 @@ func startStream(url string) (video io.Reader, audio io.Reader, err error) {
 		"-o", "-",
 		url,
 	)
+	ytdlp.Stderr = os.Stderr
 
 	ytdlpOut, err := ytdlp.StdoutPipe()
 	if err != nil {
@@ -200,6 +201,7 @@ func startStream(url string) (video io.Reader, audio io.Reader, err error) {
 	)
 
 	ffmpeg.Stdin = ytdlpOut
+	ffmpeg.Stderr = os.Stderr
 	ffmpeg.ExtraFiles = []*os.File{audioPipeWriter}
 
 	videoPipe, err := ffmpeg.StdoutPipe()
