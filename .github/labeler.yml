@@ -15,9 +15,6 @@
 "t:gateway":
   - changed-files:
       - any-glob-to-any-file: [ 'gateway/*' ]
-"t:handler":
-  - changed-files:
-      - any-glob-to-any-file: [ 'handler/*' ]
 "t:oauth2":
   - changed-files:
       - any-glob-to-any-file: [ 'oauth2/*' ]
@@ -27,9 +24,6 @@
 "t:rest":
   - changed-files:
       - any-glob-to-any-file: [ 'rest/*' ]
-"t:sharding":
-  - changed-files:
-      - any-glob-to-any-file: [ 'sharding/*' ]
 "t:voice":
   - changed-files:
       - any-glob-to-any-file: [ 'voice/*' ]
