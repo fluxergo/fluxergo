@@ -6,15 +6,12 @@ import (
 
 func defaultConnConfig() connConfig {
 	return connConfig{
-		Logger:                slog.Default(),
-		LiveKitConnCreateFunc: NewLivekitConn,
+		Logger: slog.Default(),
 	}
 }
 
 type connConfig struct {
 	Logger *slog.Logger
-
-	LiveKitConnCreateFunc LiveKitConnCreateFunc
 }
 
 // ConnConfigOpt is used to functionally configure a connConfig.
@@ -31,12 +28,5 @@ func (c *connConfig) apply(opts []ConnConfigOpt) {
 func WithConnLogger(logger *slog.Logger) ConnConfigOpt {
 	return func(config *connConfig) {
 		config.Logger = logger
-	}
-}
-
-// WithConnLiveKitConnCreateFunc sets the Conn(s) used LiveKitConnCreateFunc.
-func WithConnLiveKitConnCreateFunc(liveKitConnCreateFunc LiveKitConnCreateFunc) ConnConfigOpt {
-	return func(config *connConfig) {
-		config.LiveKitConnCreateFunc = liveKitConnCreateFunc
 	}
 }

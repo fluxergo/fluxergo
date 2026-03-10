@@ -13,11 +13,11 @@ import (
 
 type (
 	// ConnCreateFunc is a type alias for a function that creates a new Conn.
-	ConnCreateFunc func(guildID snowflake.ID, userID snowflake.ID, voiceStateUpdateFunc StateUpdateFunc, removeConnFunc func(), opts ...ConnConfigOpt) Conn
+	ConnCreateFunc func(liveKitCon LiveKitConn, guildID snowflake.ID, userID snowflake.ID, voiceStateUpdateFunc StateUpdateFunc, removeConnFunc func(), opts ...ConnConfigOpt) Conn
 
 	// Conn is a complete voice conn to fluxer. It holds the Gateway and voiceudp.UDPConn conn and combines them.
 	Conn interface {
-		LiveKit() *LiveKitConn
+		LiveKit() LiveKitConn
 
 		// ChannelID returns the ID of the voice channel the voice Conn is openedChan to.
 		ChannelID() *snowflake.ID
@@ -40,14 +40,14 @@ type (
 )
 
 // NewConn returns a new default voice conn.
-func NewConn(guildID snowflake.ID, userID snowflake.ID, voiceStateUpdateFunc StateUpdateFunc, removeConnFunc func(), opts ...ConnConfigOpt) Conn {
+func NewConn(liveKitCon LiveKitConn, guildID snowflake.ID, userID snowflake.ID, voiceStateUpdateFunc StateUpdateFunc, removeConnFunc func(), opts ...ConnConfigOpt) Conn {
 	cfg := defaultConnConfig()
 	cfg.apply(opts)
 
 	openedCtx, openedCancel := context.WithCancel(context.Background())
 	closedCtx, closedCancel := context.WithCancel(context.Background())
 
-	conn := &connImpl{
+	return &connImpl{
 		config:               cfg,
 		voiceStateUpdateFunc: voiceStateUpdateFunc,
 		removeConnFunc:       removeConnFunc,
@@ -55,15 +55,12 @@ func NewConn(guildID snowflake.ID, userID snowflake.ID, voiceStateUpdateFunc Sta
 			GuildID: guildID,
 			UserID:  userID,
 		},
-		openedCtx: openedCtx,
-		opened:    openedCancel,
-		closedCtx: closedCtx,
-		closed:    closedCancel,
+		openedCtx:   openedCtx,
+		opened:      openedCancel,
+		closedCtx:   closedCtx,
+		closed:      closedCancel,
+		liveKitConn: liveKitCon,
 	}
-
-	conn.liveKitConn = cfg.LiveKitConnCreateFunc()
-
-	return conn
 }
 
 type connImpl struct {
@@ -74,7 +71,7 @@ type connImpl struct {
 	state   State
 	stateMu sync.Mutex
 
-	liveKitConn *LiveKitConn
+	liveKitConn LiveKitConn
 
 	openedCtx context.Context
 	opened    context.CancelFunc
@@ -82,7 +79,7 @@ type connImpl struct {
 	closed    context.CancelFunc
 }
 
-func (c *connImpl) LiveKit() *LiveKitConn {
+func (c *connImpl) LiveKit() LiveKitConn {
 	return c.liveKitConn
 }
 

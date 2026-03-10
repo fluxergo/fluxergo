@@ -14,8 +14,9 @@ func defaultManagerConfig() managerConfig {
 type managerConfig struct {
 	Logger *slog.Logger
 
-	ConnCreateFunc ConnCreateFunc
-	ConnOpts       []ConnConfigOpt
+	ConnCreateFunc        ConnCreateFunc
+	ConnOpts              []ConnConfigOpt
+	LiveKitConnCreateFunc LiveKitConnCreateFunc
 }
 
 // ManagerConfigOpt is used to functionally configure a managerConfig.
@@ -46,5 +47,11 @@ func WithConnCreateFunc(connectionCreateFunc ConnCreateFunc) ManagerConfigOpt {
 func WithConnConfigOpts(opts ...ConnConfigOpt) ManagerConfigOpt {
 	return func(config *managerConfig) {
 		config.ConnOpts = append(config.ConnOpts, opts...)
+	}
+}
+
+func WithLiveKitConnCreateFunc(liveKitConnCreateFunc LiveKitConnCreateFunc) ManagerConfigOpt {
+	return func(config *managerConfig) {
+		config.LiveKitConnCreateFunc = liveKitConnCreateFunc
 	}
 }

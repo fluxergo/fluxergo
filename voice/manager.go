@@ -91,10 +91,18 @@ func (m *managerImpl) CreateConn(guildID snowflake.ID) Conn {
 		return conn
 	}
 
-	var once sync.Once
-	removeFunc := func() { once.Do(func() { m.RemoveConn(guildID) }) }
+	if m.config.LiveKitConnCreateFunc == nil {
+		panic("Missing LiveKitConnCreateFunc in ManagerConfig, please provide one using WithLiveKitConnCreateFunc")
+	}
 
-	conn := m.config.ConnCreateFunc(guildID, m.userID, m.voiceStateUpdateFunc, removeFunc, append([]ConnConfigOpt{WithConnLogger(m.config.Logger)}, m.config.ConnOpts...)...)
+	var once sync.Once
+	removeFunc := func() {
+		once.Do(func() {
+			m.RemoveConn(guildID)
+		})
+	}
+
+	conn := m.config.ConnCreateFunc(m.config.LiveKitConnCreateFunc(), guildID, m.userID, m.voiceStateUpdateFunc, removeFunc, append([]ConnConfigOpt{WithConnLogger(m.config.Logger)}, m.config.ConnOpts...)...)
 	m.conns[guildID] = conn
 
 	return conn
