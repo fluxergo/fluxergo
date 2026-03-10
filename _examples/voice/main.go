@@ -1,6 +1,5 @@
 package main
 
-import "C"
 import (
 	"bytes"
 	"context"
@@ -16,12 +15,11 @@ import (
 	"time"
 
 	"github.com/disgoorg/snowflake/v2"
-	"github.com/livekit/protocol/logger"
-
 	"github.com/fluxergo/fluxergo"
 	"github.com/fluxergo/fluxergo/bot"
 	"github.com/fluxergo/fluxergo/events"
 	"github.com/fluxergo/fluxergo/voice"
+	"github.com/fluxergo/livekit"
 )
 
 var (
@@ -43,6 +41,9 @@ func main() {
 		bot.WithEventListenerFunc(func(e *events.Ready) {
 			go play(e.Client())
 		}),
+		bot.WithVoiceManagerConfigOpts(
+			voice.WithLiveKitConnCreateFunc(livekit.NewConn),
+		),
 	)
 	if err != nil {
 		slog.Error("error creating client", slog.Any("err", err))
@@ -70,7 +71,7 @@ func play(client *bot.Client) {
 	conn := client.VoiceManager.CreateConn(guildID)
 	slog.Info("connecting to voice manager")
 
-	if err := conn.Open(context.Background(), channelID, false, false); err != nil {
+	if err := conn.Open(context.Background(), channelID); err != nil {
 		panic("error connecting to voice channel: " + err.Error())
 	}
 	slog.Info("connected to voice channel")
@@ -111,7 +112,7 @@ func writeAudio(w io.Writer) {
 
 			_, err = w.Write(buf)
 			if err != nil {
-				logger.Errorw("error writing sample", err)
+				slog.Error("error writing sample", slog.Any("err", err))
 			}
 		}
 	}
