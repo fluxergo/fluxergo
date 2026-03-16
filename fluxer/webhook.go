@@ -19,7 +19,7 @@ const (
 	WebhookTypeApplication
 )
 
-// Webhook (https://fluxer.com/developers/docs/resources/webhook) is a way to post messages to Discord using the Discord API which do not require bot authentication or use.
+// Webhook (https://fluxer.app/developers/docs/resources/webhook) is a way to post messages to Discord using the Discord API which do not require bot authentication or use.
 type Webhook interface {
 	json.Marshaler
 	Type() WebhookType

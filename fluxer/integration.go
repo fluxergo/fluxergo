@@ -19,13 +19,13 @@ const (
 	IntegrationTypeGuildSubscription IntegrationType = "guild_subscription"
 )
 
-// IntegrationAccount (https://fluxer.com/developers/docs/resources/guild#integration-account-object)
+// IntegrationAccount (https://fluxer.app/developers/docs/resources/guild#integration-account-object)
 type IntegrationAccount struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
-// IntegrationApplication (https://fluxer.com/developers/docs/resources/guild#integration-application-object)
+// IntegrationApplication (https://fluxer.app/developers/docs/resources/guild#integration-application-object)
 type IntegrationApplication struct {
 	ID          snowflake.ID `json:"id"`
 	Name        string       `json:"name"`
@@ -35,7 +35,7 @@ type IntegrationApplication struct {
 	Client      User         `json:"bot"`
 }
 
-// Integration (https://fluxer.com/developers/docs/resources/guild#integration-object)
+// Integration (https://fluxer.app/developers/docs/resources/guild#integration-object)
 type Integration interface {
 	json.Marshaler
 	Type() IntegrationType

@@ -26,7 +26,7 @@ type config struct {
 	// Dialer is the websocket.Dialer of the Gateway. Defaults to websocket.DefaultDialer.
 	Dialer *websocket.Dialer
 	// LargeThreshold is the threshold for the Gateway. Defaults to 50
-	// See here for more information: https://fluxer.com/developers/docs/topics/gateway-events#identify-identify-structure.
+	// See here for more information: https://fluxer.app/developers/docs/topics/gateway-events#identify-identify-structure.
 	LargeThreshold int
 	// Compression is the compression type to use for the gateway. Defaults to [CompressionZstdStream].
 	Compression CompressionType
@@ -94,7 +94,7 @@ func WithDialer(dialer *websocket.Dialer) ConfigOpt {
 }
 
 // WithLargeThreshold sets the threshold for the Gateway.
-// See here for more information: https://fluxer.com/developers/docs/topics/gateway#identify-identify-structure
+// See here for more information: https://fluxer.app/developers/docs/topics/gateway#identify-identify-structure
 func WithLargeThreshold(largeThreshold int) ConfigOpt {
 	return func(config *config) {
 		config.LargeThreshold = largeThreshold
@@ -102,7 +102,7 @@ func WithLargeThreshold(largeThreshold int) ConfigOpt {
 }
 
 // WithCompression sets the compression mechanism to use.
-// See here for more information: https://fluxer.com/developers/docs/topics/gateway#encoding-and-compression
+// See here for more information: https://fluxer.app/developers/docs/topics/gateway#encoding-and-compression
 func WithCompression(compression CompressionType) ConfigOpt {
 	return func(config *config) {
 		config.Compression = compression
@@ -117,7 +117,7 @@ func WithURL(url string) ConfigOpt {
 }
 
 // WithShardID sets the shard ID for the Gateway.
-// See here for more information on sharding: https://fluxer.com/developers/docs/topics/gateway#sharding
+// See here for more information on sharding: https://fluxer.app/developers/docs/topics/gateway#sharding
 func WithShardID(shardID int) ConfigOpt {
 	return func(config *config) {
 		config.ShardID = shardID
@@ -125,7 +125,7 @@ func WithShardID(shardID int) ConfigOpt {
 }
 
 // WithShardCount sets the shard count for the Gateway.
-// See here for more information on sharding: https://fluxer.com/developers/docs/topics/gateway#sharding
+// See here for more information on sharding: https://fluxer.app/developers/docs/topics/gateway#sharding
 func WithShardCount(shardCount int) ConfigOpt {
 	return func(config *config) {
 		config.ShardCount = shardCount
@@ -202,7 +202,7 @@ func WithPresenceOpts(opts ...PresenceOpt) ConfigOpt {
 }
 
 // WithOS sets the operating system the bot is running on.
-// See here for more information: https://fluxer.com/developers/docs/topics/gateway#identify-identify-connection-properties
+// See here for more information: https://fluxer.app/developers/docs/topics/gateway#identify-identify-connection-properties
 func WithOS(os string) ConfigOpt {
 	return func(config *config) {
 		config.OS = os
@@ -210,7 +210,7 @@ func WithOS(os string) ConfigOpt {
 }
 
 // WithBrowser sets the browser the bot is running on.
-// See here for more information: https://fluxer.com/developers/docs/topics/gateway#identify-identify-connection-properties
+// See here for more information: https://fluxer.app/developers/docs/topics/gateway#identify-identify-connection-properties
 func WithBrowser(browser string) ConfigOpt {
 	return func(config *config) {
 		config.Browser = browser
@@ -218,7 +218,7 @@ func WithBrowser(browser string) ConfigOpt {
 }
 
 // WithDevice sets the device the bot is running on.
-// See here for more information: https://fluxer.com/developers/docs/topics/gateway#identify-identify-connection-properties
+// See here for more information: https://fluxer.app/developers/docs/topics/gateway#identify-identify-connection-properties
 func WithDevice(device string) ConfigOpt {
 	return func(config *config) {
 		config.Device = device

@@ -3,7 +3,7 @@ package gateway
 // Opcode are opcodes used by discord
 type Opcode int
 
-// https://fluxer.com/developers/docs/topics/opcodes-and-status-codes#gateway-gateway-opcodes
+// https://fluxer.app/developers/docs/topics/opcodes-and-status-codes#gateway-gateway-opcodes
 const (
 	OpcodeDispatch Opcode = iota
 	OpcodeHeartbeat

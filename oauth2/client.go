@@ -24,7 +24,7 @@ var (
 	}
 )
 
-// Session represents a discord access token response (https://fluxer.com/developers/docs/topics/oauth2#authorization-code-grant-access-token-response)
+// Session represents a discord access token response (https://fluxer.app/developers/docs/topics/oauth2#authorization-code-grant-access-token-response)
 type Session struct {
 	// AccessToken allows requesting user information
 	AccessToken string `json:"access_token"`

@@ -229,7 +229,7 @@ const (
 	AuditLogChangeKeyRoleRemove AuditLogChangeKey = "$remove"
 )
 
-// AuditLog (https://fluxer.com/developers/docs/resources/audit-log) These are logs of events that occurred, accessible via the Discord
+// AuditLog (https://fluxer.app/developers/docs/resources/audit-log) These are logs of events that occurred, accessible via the Discord
 type AuditLog struct {
 	AuditLogEntries      []AuditLogEntry       `json:"audit_log_entries"`
 	AutoModerationRules  []AutoModerationRule  `json:"auto_moderation_rules"`
@@ -268,7 +268,7 @@ func (l *AuditLog) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// AuditLogEntry (https://fluxer.com/developers/docs/resources/audit-log#audit-log-entry-object)
+// AuditLogEntry (https://fluxer.app/developers/docs/resources/audit-log#audit-log-entry-object)
 type AuditLogEntry struct {
 	TargetID   *snowflake.ID              `json:"target_id"`
 	Changes    []AuditLogChange           `json:"changes"`
@@ -279,7 +279,7 @@ type AuditLogEntry struct {
 	Reason     *string                    `json:"reason"`
 }
 
-// AuditLogChange (https://fluxer.com/developers/docs/resources/audit-log#audit-log-change-object) contains what was changed.
+// AuditLogChange (https://fluxer.app/developers/docs/resources/audit-log#audit-log-change-object) contains what was changed.
 // For a list of possible keys & values see the discord documentation.
 type AuditLogChange struct {
 	// NewValue is the new value of the key after the change as a json.RawMessage.
@@ -300,7 +300,7 @@ func (c *AuditLogChange) UnmarshalOldValue(v any) error {
 	return json.Unmarshal(c.OldValue, v)
 }
 
-// OptionalAuditLogEntryInfo (https://fluxer.com/developers/docs/resources/audit-log#audit-log-entry-object-optional-audit-entry-info)
+// OptionalAuditLogEntryInfo (https://fluxer.app/developers/docs/resources/audit-log#audit-log-entry-object-optional-audit-entry-info)
 type OptionalAuditLogEntryInfo struct {
 	DeleteMemberDays              *string                    `json:"delete_member_days"`
 	MembersRemoved                *string                    `json:"members_removed"`

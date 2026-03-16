@@ -11,7 +11,7 @@ import (
 )
 
 // JSONErrorCode is the error code returned by the Discord API.
-// See https://fluxer.com/developers/docs/topics/opcodes-and-status-codes#json-json-error-codes
+// See https://fluxer.app/developers/docs/topics/opcodes-and-status-codes#json-json-error-codes
 type JSONErrorCode int
 
 const (

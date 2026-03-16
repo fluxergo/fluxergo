@@ -1,6 +1,6 @@
 package fluxer
 
-// VoiceRegion (https://fluxer.com/developers/docs/resources/voice#voice-region-object)
+// VoiceRegion (https://fluxer.app/developers/docs/resources/voice#voice-region-object)
 type VoiceRegion struct {
 	ID         string `json:"id"`
 	Name       string `json:"name"`

@@ -39,7 +39,7 @@ func InviteURL(code string) string {
 
 // WebhookURL returns the url over which the webhook can be called
 func WebhookURL(webhookID snowflake.ID, webhookToken string) string {
-	return urlPrint("https://fluxer.com/api/webhooks/{webhook.id}/{webhook.token}", webhookID, webhookToken)
+	return urlPrint("https://api.fluxer.app/webhooks/{webhook.id}/{webhook.token}", webhookID, webhookToken)
 }
 
 // AuthorizeURL returns the OAuth2 authorize url with the given query params
@@ -48,5 +48,5 @@ func AuthorizeURL(values QueryValues) string {
 	if query != "" {
 		query = "?" + query
 	}
-	return "https://fluxer.com/oauth2/authorize" + query
+	return "https://web.fluxer.app/oauth2/authorize" + query
 }

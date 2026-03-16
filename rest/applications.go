@@ -20,7 +20,7 @@ type Applications interface {
 	GetActivityInstance(applicationID snowflake.ID, instanceID string, opts ...RequestOpt) (*fluxer.ActivityInstance, error)
 }
 
-// GetEntitlementsParams holds query parameters for Applications.GetEntitlements (https://fluxer.com/developers/docs/resources/entitlement#list-entitlements)
+// GetEntitlementsParams holds query parameters for Applications.GetEntitlements (https://fluxer.app/developers/docs/resources/entitlement#list-entitlements)
 type GetEntitlementsParams struct {
 	UserID         snowflake.ID
 	SkuIDs         []snowflake.ID

@@ -175,7 +175,7 @@ func (t TokenType) Apply(token string) string {
 	return fmt.Sprintf("%s %s", t.String(), token)
 }
 
-// ApplicationFlags (https://fluxer.com/developers/docs/resources/application#application-object-application-flags)
+// ApplicationFlags (https://fluxer.app/developers/docs/resources/application#application-object-application-flags)
 type ApplicationFlags int
 
 const (

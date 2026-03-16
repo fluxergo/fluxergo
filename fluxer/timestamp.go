@@ -100,7 +100,7 @@ func NewTimestamp(style TimestampStyle, time time.Time) Timestamp {
 
 var _ fmt.Stringer = (*Timestamp)(nil)
 
-// Timestamp represents a timestamp markdown object https://fluxer.com/developers/docs/reference#message-formatting
+// Timestamp represents a timestamp markdown object https://fluxer.app/developers/docs/reference#message-formatting
 type Timestamp struct {
 	time.Time
 	TimestampStyle TimestampStyle

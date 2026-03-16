@@ -147,7 +147,7 @@ func (r *pipeBuffer) Reset() {
 }
 
 // zstdStreamTransport implements zstd-stream compression.
-// See https://fluxer.com/developers/docs/events/gateway#zstdstream
+// See https://fluxer.app/developers/docs/events/gateway#zstdstream
 type zstdStreamTransport struct {
 	baseTransport
 
@@ -198,7 +198,7 @@ func (t *zstdStreamTransport) Close() error {
 }
 
 // zlibStreamTransport implements zlib-stream compression.
-// See https://fluxer.com/developers/docs/events/gateway#zlibstream
+// See https://fluxer.app/developers/docs/events/gateway#zlibstream
 type zlibStreamTransport struct {
 	baseTransport
 
@@ -264,7 +264,7 @@ func (t *zlibStreamTransport) Close() error {
 }
 
 // zlibPayloadTransport implements both no compression and payload zlib compression.
-// See https://fluxer.com/developers/docs/events/gateway#payload-compression
+// See https://fluxer.app/developers/docs/events/gateway#payload-compression
 type zlibPayloadTransport struct {
 	baseTransport
 }

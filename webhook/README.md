@@ -1,6 +1,6 @@
 # webhook
 
-[Webhook](https://fluxer.com/developers/docs/resources/webhook) module of [disgo](https://github.com/fluxergo/fluxergo)
+[Webhook](https://fluxer.app/developers/docs/resources/webhook) module of [disgo](https://github.com/fluxergo/fluxergo)
 
 ### Usage
 

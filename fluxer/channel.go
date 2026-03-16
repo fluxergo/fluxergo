@@ -813,7 +813,7 @@ type PartialChannel struct {
 	Type ChannelType  `json:"type"`
 }
 
-// VideoQualityMode https://fluxer.com/developers/docs/resources/channel#channel-object-video-quality-modes
+// VideoQualityMode https://fluxer.app/developers/docs/resources/channel#channel-object-video-quality-modes
 type VideoQualityMode int
 
 const (

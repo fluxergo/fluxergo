@@ -54,7 +54,7 @@ var (
 	NameplateAsset = NewCDN("/assets/collectibles/{nameplate.asset}/asset", FileFormatWebM)
 )
 
-// FileFormat is the type of file on Discord's CDN (https://fluxer.com/developers/docs/reference#image-formatting-image-formats)
+// FileFormat is the type of file on Discord's CDN (https://fluxer.app/developers/docs/reference#image-formatting-image-formats)
 type FileFormat string
 
 // The available FileFormat(s)

@@ -10,7 +10,7 @@ import (
 	"github.com/fluxergo/fluxergo/internal/flags"
 )
 
-// UserFlags defines certain flags/badges a user can have (https://fluxer.com/developers/docs/resources/user#user-object-user-flags)
+// UserFlags defines certain flags/badges a user can have (https://fluxer.app/developers/docs/resources/user#user-object-user-flags)
 type UserFlags int
 
 // All UserFlags
@@ -179,7 +179,7 @@ type OAuth2User struct {
 	Email    string `json:"email"`
 }
 
-// PremiumType defines the different discord nitro tiers a user can have (https://fluxer.com/developers/docs/resources/user#user-object-premium-types)
+// PremiumType defines the different discord nitro tiers a user can have (https://fluxer.app/developers/docs/resources/user#user-object-premium-types)
 type PremiumType int
 
 // All PremiumType(s)

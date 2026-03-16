@@ -6,7 +6,7 @@ import (
 )
 
 // AccessTokenResponse is the response from the OAuth2 exchange endpoint.
-// See https://fluxer.com/developers/docs/topics/oauth2#authorization-code-grant for more information.
+// See https://fluxer.app/developers/docs/topics/oauth2#authorization-code-grant for more information.
 type AccessTokenResponse struct {
 	AccessToken  string        `json:"access_token"`
 	TokenType    TokenType     `json:"token_type"`

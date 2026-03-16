@@ -4,13 +4,13 @@ import (
 	"github.com/disgoorg/snowflake/v2"
 )
 
-// Ban represents a banned User from a Guild (https://fluxer.com/developers/docs/resources/guild#ban-object)
+// Ban represents a banned User from a Guild (https://fluxer.app/developers/docs/resources/guild#ban-object)
 type Ban struct {
 	Reason *string `json:"reason,omitempty"`
 	User   User    `json:"user"`
 }
 
-// AddBan is used to ban a User (https://fluxer.com/developers/docs/resources/guild#create-guild-ban-json-params)
+// AddBan is used to ban a User (https://fluxer.app/developers/docs/resources/guild#create-guild-ban-json-params)
 type AddBan struct {
 	DeleteMessageSeconds int `json:"delete_message_seconds,omitempty"`
 }

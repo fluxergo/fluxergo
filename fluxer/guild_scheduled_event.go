@@ -7,7 +7,7 @@ import (
 	"github.com/disgoorg/snowflake/v2"
 )
 
-// GuildScheduledEvent a representation of a scheduled event in a Guild (https://fluxer.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object)
+// GuildScheduledEvent a representation of a scheduled event in a Guild (https://fluxer.app/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object)
 type GuildScheduledEvent struct {
 	ID                 snowflake.ID                  `json:"id"`
 	GuildID            snowflake.ID                  `json:"guild_id"`
@@ -74,7 +74,7 @@ type GuildScheduledEventUser struct {
 	Member                *Member      `json:"member"`
 }
 
-// ScheduledEventPrivacyLevel the privacy level of the ScheduledEventPrivacyLevel (https://fluxer.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-privacy-level)
+// ScheduledEventPrivacyLevel the privacy level of the ScheduledEventPrivacyLevel (https://fluxer.app/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-privacy-level)
 type ScheduledEventPrivacyLevel int
 
 const (
@@ -82,7 +82,7 @@ const (
 	ScheduledEventPrivacyLevelGuildOnly
 )
 
-// ScheduledEventStatus the status of the scheduled event (https://fluxer.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-status)
+// ScheduledEventStatus the status of the scheduled event (https://fluxer.app/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-status)
 type ScheduledEventStatus int
 
 const (
@@ -92,7 +92,7 @@ const (
 	ScheduledEventStatusCancelled
 )
 
-// ScheduledEventEntityType the type of the scheduled event (https://fluxer.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-entity-types)
+// ScheduledEventEntityType the type of the scheduled event (https://fluxer.app/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-entity-types)
 type ScheduledEventEntityType int
 
 const (
@@ -157,7 +157,7 @@ const (
 	ScheduledEventRecurrenceRuleMonthDecember
 )
 
-// EntityMetaData additional metadata for the scheduled event (https://fluxer.com/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-entity-metadata)
+// EntityMetaData additional metadata for the scheduled event (https://fluxer.app/developers/docs/resources/guild-scheduled-event#guild-scheduled-event-object-guild-scheduled-event-entity-metadata)
 type EntityMetaData struct {
 	Location string `json:"location"`
 }

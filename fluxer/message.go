@@ -86,7 +86,7 @@ func (t MessageType) Deleteable() bool {
 	}
 }
 
-const MessageURLFmt = "https://fluxer.com/channels/%s/%d/%d"
+const MessageURLFmt = "https://fluxer.app/channels/%s/%d/%d"
 
 func MessageURL(guildID snowflake.ID, channelID snowflake.ID, messageID snowflake.ID) string {
 	return fmt.Sprintf(MessageURLFmt, guildID, channelID, messageID)
@@ -164,7 +164,7 @@ const (
 	MessageReactionTypeBurst
 )
 
-// MessageActivityType is the type of MessageActivity https://fluxer.com/developers/docs/resources/message#message-object-message-activity-types
+// MessageActivityType is the type of MessageActivity https://fluxer.app/developers/docs/resources/message#message-object-message-activity-types
 type MessageActivityType int
 
 // Constants for MessageActivityType

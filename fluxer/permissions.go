@@ -9,7 +9,7 @@ import (
 	"github.com/fluxergo/fluxergo/internal/flags"
 )
 
-// Permissions extends the Bit structure, and is used within roles and channels (https://fluxer.com/developers/docs/topics/permissions#permissions)
+// Permissions extends the Bit structure, and is used within roles and channels (https://fluxer.app/developers/docs/topics/permissions#permissions)
 type Permissions int64
 
 const (

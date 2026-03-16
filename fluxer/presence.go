@@ -4,7 +4,7 @@ import (
 	"github.com/disgoorg/snowflake/v2"
 )
 
-// Presence (https://fluxer.com/developers/docs/topics/gateway#presence-update)
+// Presence (https://fluxer.app/developers/docs/topics/gateway#presence-update)
 type Presence struct {
 	PresenceUser PresenceUser `json:"user"`
 	GuildID      snowflake.ID `json:"guild_id"`
@@ -17,7 +17,7 @@ type PresenceUser struct {
 	ID snowflake.ID `json:"id"`
 }
 
-// OnlineStatus (https://fluxer.com/developers/docs/topics/gateway#update-presence-status-types)
+// OnlineStatus (https://fluxer.app/developers/docs/topics/gateway#update-presence-status-types)
 type OnlineStatus string
 
 const (
@@ -28,7 +28,7 @@ const (
 	OnlineStatusOffline   OnlineStatus = "offline"
 )
 
-// ClientStatus (https://fluxer.com/developers/docs/topics/gateway#client-status-object)
+// ClientStatus (https://fluxer.app/developers/docs/topics/gateway#client-status-object)
 type ClientStatus struct {
 	Desktop OnlineStatus `json:"desktop,omitempty"`
 	Mobile  OnlineStatus `json:"mobile,omitempty"`
