@@ -161,21 +161,24 @@ func (g Guild) IconURL(opts ...CDNOpt) *string {
 	if g.Icon == nil {
 		return nil
 	}
-	return new(formatAssetURL(GuildIcon, opts, g.ID, *g.Icon))
+	url := formatAssetURL(GuildIcon, opts, g.ID, *g.Icon)
+	return &url
 }
 
 func (g Guild) SplashURL(opts ...CDNOpt) *string {
 	if g.Splash == nil {
 		return nil
 	}
-	return new(formatAssetURL(GuildSplash, opts, g.ID, *g.Splash))
+	url := formatAssetURL(GuildSplash, opts, g.ID, *g.Splash)
+	return &url
 }
 
 func (g Guild) BannerURL(opts ...CDNOpt) *string {
 	if g.Banner == nil {
 		return nil
 	}
-	return new(formatAssetURL(GuildBanner, opts, g.ID, *g.Banner))
+	url := formatAssetURL(GuildBanner, opts, g.ID, *g.Banner)
+	return &url
 }
 
 func (g Guild) CreatedAt() time.Time {
